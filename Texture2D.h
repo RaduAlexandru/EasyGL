@@ -51,6 +51,9 @@ namespace gl{
         }
         void upload_data(GLint internal_format, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data_ptr, int size_bytes){
 
+            m_width=width;
+            m_height=height;
+
             m_internal_format=internal_format;
             // bind the texture and PBO
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
@@ -96,6 +99,8 @@ namespace gl{
         //by default the values will get transfered to the gpu and get normalized to [0,1] therefore an rgb texture of unsigned bytes will be read as floats from the shader with sampler2D. However sometimes we might want to use directly the integers stored there, for example when we have a semantic texture and the nr range from [0,nr_classes]. Then we set normalize to false and in the shader we acces the texture with usampler2D
         void upload_from_cv_mat(const cv::Mat& cv_mat, const bool store_as_normalized_vals=true){
 
+            m_width=cv_mat.cols;
+            m_height=cv_mat.rows;
             //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
 
             //the best format for fast upload using pbos and dmo is
@@ -126,6 +131,8 @@ namespace gl{
 
         //allocate inmutable texture storage
         void allocate_tex_storage_inmutable(GLenum internal_format,  GLsizei width, GLsizei height){
+            m_width=width;
+            m_height=height;
             m_internal_format=internal_format;
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height);
@@ -222,8 +229,13 @@ namespace gl{
             return m_internal_format;
         }
 
+        int width() const{ LOG_IF(WARNING,m_width==0) << "Width of the texture is 0"; return m_width; };
+        int height() const{ LOG_IF(WARNING,m_height==0) << "Height of the texture is 0";return m_height; };
 
     private:
+        int m_width;
+        int m_height;
+
         GLuint m_tex_id;
         // GLuint m_pbo_id;
         bool m_tex_storage_initialized;

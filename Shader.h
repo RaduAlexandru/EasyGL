@@ -126,6 +126,7 @@ namespace gl{
 
         void uniform_int(const int val, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
+            std::cout << "uniform int locationn is " << uniform_location << " val is " << val << '\n';
             glUniform1i(uniform_location, val);
         }
 
@@ -148,6 +149,7 @@ namespace gl{
             CHECK(m_is_compute_shader) << "Program is not a compute shader so we cannot dispatch it";
             glDispatchCompute(round_up_to_nearest_multiple(total_x,local_size_x)/local_size_x,
                               round_up_to_nearest_multiple(total_y,local_size_y)/local_size_y, 1 );
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
         }
 
         int get_prog_id() const{
