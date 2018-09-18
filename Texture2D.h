@@ -8,17 +8,25 @@
 #include "UtilsGL.h"
 #include "stereo_cost_vol_dense/MiscUtils.h"
 
+#include "stereo_cost_vol_dense/Profiler.h"
+
 namespace gl{
     class Texture2D{
     public:
         Texture2D():
             m_tex_id(-1),
-            m_pbo_id(-1),
+            // m_pbo_id(-1),
             m_internal_format(-1),
             m_tex_storage_initialized(false),
-            m_pbo_storage_initialized(false){
+            m_nr_pbos(2),
+            m_cur_pbo_idx(0){
             glGenTextures(1,&m_tex_id);
-            glGenBuffers(1, &m_pbo_id);
+
+            //create some pbos
+            m_pbo_ids.resize(m_nr_pbos,-1);
+            m_pbo_storages_initialized.resize(m_nr_pbos,false);
+            glGenBuffers(m_nr_pbos, m_pbo_ids.data());
+
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_BORDER);
@@ -27,7 +35,7 @@ namespace gl{
 
         ~Texture2D(){
             glDeleteTextures(1, &m_tex_id);
-            glDeleteBuffers(1, &m_pbo_id);
+            glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
 
         void set_wrap_mode(const GLenum wrap_mode){
@@ -42,14 +50,17 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
         void upload_data(GLint internal_format, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data_ptr, int size_bytes){
+
             m_internal_format=internal_format;
             // bind the texture and PBO
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_id);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]);
 
-            if(!m_pbo_storage_initialized){
+
+
+            if(!m_pbo_storages_initialized[m_cur_pbo_idx]){
                 glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW); //allocate storage for pbo
-                m_pbo_storage_initialized=true;
+                m_pbo_storages_initialized[m_cur_pbo_idx]=true;
             }
             if(!m_tex_storage_initialized){
                 glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
@@ -57,26 +68,42 @@ namespace gl{
             }
 
 
-            //update pbo
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, 0, GL_STREAM_DRAW); //orphan the pbo storage
-            GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-            if(ptr){
-                memcpy(ptr, data_ptr, size_bytes);
-                glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
-            }
+            // //update pbo (buffer orhpaning doesnt quite work for pbos as explained here https://www.opengl.org/discussion_boards/archive/index.php/t-173488.html)
+            // glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, 0, GL_STREAM_DRAW); //orphan the pbo storage
+            // GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+            // if(ptr){
+            //     memcpy(ptr, data_ptr, size_bytes);
+            //     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
+            // }
+
+            //attempt 2 to update the pbo fast, mapping and doing a memcpy is slower
+            glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, size_bytes, data_ptr);
+
 
             // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0);
 
+
             // it is good idea to release PBOs with ID 0 after use.
             // Once bound with 0, all pixel operations behave normal ways.
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+            m_cur_pbo_idx=(m_cur_pbo_idx+1)%m_nr_pbos;
         }
 
 
         //easy way to just get a cv mat there, does internally an upload to pbo and schedules a dma
         //by default the values will get transfered to the gpu and get normalized to [0,1] therefore an rgb texture of unsigned bytes will be read as floats from the shader with sampler2D. However sometimes we might want to use directly the integers stored there, for example when we have a semantic texture and the nr range from [0,nr_classes]. Then we set normalize to false and in the shader we acces the texture with usampler2D
         void upload_from_cv_mat(const cv::Mat& cv_mat, const bool store_as_normalized_vals=true){
+
+            //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
+
+            //the best format for fast upload using pbos and dmo is
+            /*
+            internalformal: GL_RGBA
+            format: GL_BGRA
+            type: GL_UNSIGNED_INT_8_8_8_8_REV
+            */
 
             //from the cv format get the corresponding gl internal_format, format and type
             GLint internal_format;
@@ -105,45 +132,45 @@ namespace gl{
             m_tex_storage_initialized=true;
         }
 
-        //uploads data from cpu to pbo (on gpu) will take some cpu time to perform the memcpy
-        void upload_to_pbo(const void* data_ptr, int size_bytes){
-            // bind the PBO
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_id);
+        // //uploads data from cpu to pbo (on gpu) will take some cpu time to perform the memcpy
+        // void upload_to_pbo(const void* data_ptr, int size_bytes){
+        //     // bind the PBO
+        //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_id);
+        //
+        //
+        //     //allocate storage for pbo
+        //     if(!m_pbo_storage_initialized){
+        //         glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW); //allocate storage for pbo
+        //         m_pbo_storage_initialized=true;
+        //     }
+        //
+        //
+        //     //update pbo
+        //     glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, 0, GL_STREAM_DRAW); //orphan the pbo storage
+        //     GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+        //     if(ptr){
+        //         memcpy(ptr, data_ptr, size_bytes);
+        //         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
+        //     }
+        //
+        //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        // }
 
-
-            //allocate storage for pbo
-            if(!m_pbo_storage_initialized){
-                glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW); //allocate storage for pbo
-                m_pbo_storage_initialized=true;
-            }
-
-
-            //update pbo
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, 0, GL_STREAM_DRAW); //orphan the pbo storage
-            GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-            if(ptr){
-                memcpy(ptr, data_ptr, size_bytes);
-                glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
-            }
-
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        }
-
-        //uploads the data of the pbo (on the gpu already) to the texture (also on the gpu). Should return inmediatelly
-        void upload_pbo_to_tex( GLsizei width, GLsizei height,
-                                GLenum format, GLenum type){
-            // bind the PBO and texture
-            glBindTexture(GL_TEXTURE_2D, m_tex_id);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_id);
-
-            // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0);
-
-
-            // it is good idea to release PBOs with ID 0 after use.
-            // Once bound with 0, all pixel operations behave normal ways.
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        }
+        // //uploads the data of the pbo (on the gpu already) to the texture (also on the gpu). Should return inmediatelly
+        // void upload_pbo_to_tex( GLsizei width, GLsizei height,
+        //                         GLenum format, GLenum type){
+        //     // bind the PBO and texture
+        //     glBindTexture(GL_TEXTURE_2D, m_tex_id);
+        //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_id);
+        //
+        //     // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
+        //     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0);
+        //
+        //
+        //     // it is good idea to release PBOs with ID 0 after use.
+        //     // Once bound with 0, all pixel operations behave normal ways.
+        //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        // }
 
         //uploads the data of the pbo (on the gpu already) to the texture (also on the gpu). Should return inmediatelly
         void upload_pbo_to_tex_no_binds( GLsizei width, GLsizei height,
@@ -198,10 +225,16 @@ namespace gl{
 
     private:
         GLuint m_tex_id;
-        GLuint m_pbo_id;
+        // GLuint m_pbo_id;
         bool m_tex_storage_initialized;
-        bool m_pbo_storage_initialized;
+        int m_nr_pbos;
+        // bool m_pbo_storage_initialized;
         GLint m_internal_format;
+
+        std::vector<GLuint> m_pbo_ids;
+        std::vector<bool> m_pbo_storages_initialized;
+        int m_cur_pbo_idx; //index into the pbo that we will use for uploading
+
 
 
     };
