@@ -110,13 +110,26 @@ namespace gl{
             GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_FALSE, 0, access, tex.get_internal_format()));
         }
 
-        // //bind all layers of the Texture Array
-        // void bind_image(const gl::Texture2DArray& tex,  const GLenum access, const std::string& uniform_name){
-        //     TODO get the internal of texture object from itself
-        //     TODO get the image unit
-        //     glBindImageTexture(1, tex.get_tex_id(), 0, GL_TRUE, 0, access, GL_R8UI);
-        //     glBindImageTexture(2, tex.get_tex_id(), 0, GL_FALSE, 0, GL_WRITE_ONLY, tex.get_format());
-        // }
+        //bind all layers of the Texture Array
+        void bind_image(const gl::Texture2DArray& tex,  const GLenum access, const std::string& uniform_name){
+            check_format_is_valid_for_image_bind(tex);
+
+            int cur_image_unit;
+            if(image2image_units.find (uniform_name) == image2image_units.end()){
+                //the image was never used before so we bind it
+                cur_image_unit=m_nr_image_units_used;
+                image2image_units[uniform_name]=cur_image_unit;
+                m_nr_image_units_used++;
+            }else{
+                //the image was used before and the texture was already assigned to a certain image unit, We bind the image to the same one
+                cur_image_unit=image2image_units[uniform_name];
+            }
+            uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
+            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << "We used too many image units! Try to bind less images to the shader";
+
+            GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_TRUE, 0, access, tex.get_internal_format()));
+        }
+
         // //binding a Texture array but binds a specific layer
         // void bind_image(const gl::Texture2DArray& tex, const GLint layer, const GLenum access, const std::string& uniform_name){
         //     TODO get the type of texture from itself

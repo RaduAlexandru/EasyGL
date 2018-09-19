@@ -15,9 +15,8 @@ namespace gl{
     public:
         Texture2D():
             m_tex_id(-1),
-            // m_pbo_id(-1),
-            m_internal_format(-1),
             m_tex_storage_initialized(false),
+            m_internal_format(-1),
             m_nr_pbos(2),
             m_cur_pbo_idx(0){
             glGenTextures(1,&m_tex_id);
@@ -53,8 +52,8 @@ namespace gl{
 
             m_width=width;
             m_height=height;
-
             m_internal_format=internal_format;
+
             // bind the texture and PBO
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]);
@@ -191,6 +190,9 @@ namespace gl{
 
         //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
         cv::Mat download_to_cv_mat(const bool denormalize=false){
+            CHECK(m_tex_storage_initialized) << "Texture storage was not initialized. Cannot download to an opencv mat";
+            CHECK(m_internal_format!=-1) << "Internal format was not initialized.";
+
             bind();
             //get the width and height of the gl_texture
             int w, h;
