@@ -1,12 +1,15 @@
-#include <GL/glad.h>
+#pragma once
+
+#include <glad/glad.h>
 
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
 
-#pragma once
-#include <GL/glad.h>
 #include <UtilsGL.h>
+#include "Texture2D.h"
+#include "Texture2DArray.h"
+#include "Texture3D.h"
 
 #include <iostream>
 
@@ -357,6 +360,15 @@ namespace gl{
             LOG(FATAL) << "Texture is not valid for ImageLoadStore operations. Check the valid list of internal formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
 
 
+        }
+
+
+        inline std::string file_to_string (const std::string &filename){
+            std::ifstream t(filename);
+            if (!t.is_open()){
+                LOG(FATAL) << "Cannot open file " << filename;
+            }
+            return std::string((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         }
 
     };

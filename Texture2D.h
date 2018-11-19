@@ -1,14 +1,14 @@
 #pragma once
-#include <GL/glad.h>
+#include <glad/glad.h>
 
 #include <iostream>
 
 #include "opencv2/opencv.hpp"
 
 #include "UtilsGL.h"
-#include "stereo_cost_vol_dense/MiscUtils.h"
+// #include "stereo_cost_vol_dense/MiscUtils.h"
 
-#include "stereo_cost_vol_dense/Profiler.h"
+// #include "stereo_cost_vol_dense/Profiler.h"
 
 namespace gl{
     class Texture2D{

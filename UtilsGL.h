@@ -1,13 +1,11 @@
 #pragma once
 
-// //my stuff
-#include <stereo_cost_vol_dense/MiscUtils.h>
 
 //eigen
 #include <Eigen/Dense>
 
 //GL
-#include <GL/glad.h>
+#include <glad/glad.h>
 
 //c++
 #include <iostream>
@@ -252,4 +250,9 @@ inline void gl_internal_format2format_and_type(GLenum& format, GLenum& type, con
 
     //santy check. The internal format that was passed in and the one after the roundabout should be the same
     // CHECK(returned_internal_format==internal_format) << "Something went wrong when we went from gl to cv and back to gl type. Original internal format was " << std::hex << internal_format << " but we got back from the roundabut " <<returned_internal_format << std::dec ;
+}
+
+//sometimes you want to allocate memory that is multiple of 64 bytes, so therefore you want to allocate more memory but you need a nr that is divisible by 64
+inline int round_up_to_nearest_multiple(const int number, const int divisor){
+ return number - number % divisor + divisor * !!(number % divisor);
 }
