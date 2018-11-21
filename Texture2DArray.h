@@ -26,9 +26,14 @@ namespace gl{
         }
 
         ~Texture2DArray(){
+            LOG(WARNING) << "Destroying texture";
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
+
+        //rule of three    
+        Texture2DArray(const Texture2DArray& that) = delete;
+        Texture2DArray& operator=(const Texture2DArray& that) = delete;
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_2D_ARRAY, m_tex_id);

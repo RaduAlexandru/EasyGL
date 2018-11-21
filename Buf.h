@@ -25,8 +25,13 @@ namespace gl{
         }
 
         ~Buf(){
+            LOG(WARNING) << err("Destroying buffer");
             glDeleteBuffers(1, &m_buf_id);
         }
+
+        //rule of three    
+        Buf(const Buf& that) = delete;
+        Buf& operator=(const Buf& that) = delete;
 
 
         void set_target(const GLenum target){

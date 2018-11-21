@@ -26,9 +26,14 @@ namespace gl{
         }
 
         ~Texture3D(){
+            LOG(WARNING) << "Destroying texture";
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
+
+        //rule of three    
+        Texture3D(const Texture3D& that) = delete;
+        Texture3D& operator=(const Texture3D& that) = delete;
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_3D, m_tex_id);

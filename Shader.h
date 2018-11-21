@@ -31,9 +31,14 @@ namespace gl{
                 glGetIntegerv(GL_MAX_IMAGE_UNITS, &m_max_allowed_image_units);
         }
         ~Shader(){
+            LOG(WARNING) << "Destroying shader program";
             glUseProgram(0);
             glDeleteProgram(m_prog_id);
         }
+
+        //rule of three    
+        Shader(const Shader& that) = delete;
+        Shader& operator=(const Shader& that) = delete;
 
         //compiles a program from various shaders
         void compile(const std::string &compute_shader_filename){

@@ -33,9 +33,14 @@ namespace gl{
         }
 
         ~Texture2D(){
+            LOG(WARNING) << "Destroying texture";
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
+
+        //rule of three    
+        Texture2D(const Texture2D& that) = delete;
+        Texture2D& operator=(const Texture2D& that) = delete;
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
