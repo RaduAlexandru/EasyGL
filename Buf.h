@@ -48,6 +48,7 @@ namespace gl{
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << err("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
+            if(size_bytes==0) return; 
 
             glBindBuffer(target, m_buf_id);
             glBufferData(target, size_bytes, data_ptr, usage_hints);
@@ -62,6 +63,7 @@ namespace gl{
         void upload_data(const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << err("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
             if(m_target==-1)  LOG(FATAL) << err("Target not set. Use upload_data or allocate_inmutable first");
+            if(size_bytes==0) return; 
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, size_bytes, data_ptr, usage_hints);
@@ -77,6 +79,7 @@ namespace gl{
             if(m_buf_is_inmutable) LOG(FATAL) << err("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
             if(m_target==-1)  LOG(FATAL) << err("Target not set. Use upload_data or allocate_inmutable first");
             if(m_usage_hints==-1) LOG(FATAL) << err("Usage hints have not been assigned. They will get assign by using upload_data.");
+            if(size_bytes==0) return; 
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, size_bytes, data_ptr, m_usage_hints);
@@ -144,7 +147,7 @@ namespace gl{
         }
 
 
-        void bind(){
+        void bind() const{
             if(m_target==-1)  LOG(FATAL) << err("Target not set. Use upload_data or allocate_inmutable first");
             glBindBuffer( m_target, m_buf_id );
         }
@@ -205,7 +208,7 @@ namespace gl{
         int m_height;
         int m_depth;
 
-        std::string err(const std::string msg){
+        std::string err(const std::string msg) const{
             if(m_name.empty()){
                 return msg;
             }else{
