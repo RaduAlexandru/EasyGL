@@ -37,7 +37,6 @@ namespace gl{
 
         //compiles a program from various shaders
         void compile(const std::string &compute_shader_filename){
-            std::cout << "compiling compute shader " << '\n';
             m_prog_id = program_init(file_to_string(compute_shader_filename));
             m_is_compiled=true;
             m_is_compute_shader=true;
@@ -60,7 +59,6 @@ namespace gl{
 
         void use() const{
             CHECK(m_is_compiled) << "Program is not compiled! Use prog.compile() first";
-            std::cout << "using program with id " << m_prog_id << '\n';
             glUseProgram(m_prog_id);
         }
 
@@ -182,6 +180,13 @@ namespace gl{
             glBindBufferBase(buf.get_target(), cur_image_unit, buf.get_buf_id());
         }
 
+        GLint get_attrib_location(const std::string attrib_name) const{
+            this->use();
+            GLint attribute_location = glGetAttribLocation(m_prog_id, attrib_name.c_str());
+            LOG_IF(WARNING,attribute_location==-1) << "Attribute location for name " << attrib_name << " is invalid. Are you sure you are using the attribute in the shader? Maybe you are also binding too many stuff.";
+            return attribute_location;
+        }
+
         void uniform_int(const int val, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
             std::cout << "uniform int locationn is " << uniform_location << " val is " << val << '\n';
@@ -229,6 +234,7 @@ namespace gl{
 
 
         GLint get_uniform_location(std::string uniform_name){
+            this->use();
             GLint uniform_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
             LOG_IF(WARNING,uniform_location==-1) << "Uniform location for name " << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
             return uniform_location;
