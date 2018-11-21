@@ -10,6 +10,7 @@
 #include "Texture2D.h"
 #include "Texture2DArray.h"
 #include "Texture3D.h"
+#include "Buf.h"
 
 #include <iostream>
 
