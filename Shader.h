@@ -198,6 +198,11 @@ namespace gl{
             return attribute_location;
         }
 
+         void uniform_bool(const bool val, const std::string uniform_name){
+            GLint uniform_location=get_uniform_location(uniform_name);
+            glUniform1i(uniform_location, val);
+        }
+
         void uniform_int(const int val, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
             glUniform1i(uniform_location, val);
