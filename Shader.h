@@ -210,7 +210,12 @@ namespace gl{
 
         void uniform_float(const float val, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
-            glUniform1f(uniform_location, 1);
+            glUniform1f(uniform_location, val);
+        }
+
+        void uniform_v3_float(const GLfloat* val, const std::string uniform_name){
+            GLint uniform_location=get_uniform_location(uniform_name);
+            glUniform3fv(uniform_location, 1, val);
         }
 
         void uniform_3x3(const GLfloat* val, const std::string uniform_name){
