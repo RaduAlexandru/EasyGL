@@ -32,8 +32,13 @@ namespace gl{
             set_filter_mode(GL_LINEAR);
         }
 
+        Texture2D(std::string name):
+            Texture2D(){
+            m_name=name; //we delegate the constructor to the main one but we cannot have in this intializer list more than that call.
+        }
+
         ~Texture2D(){
-            LOG(WARNING) << "Destroying texture";
+            LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
@@ -119,7 +124,7 @@ namespace gl{
             GLenum format;
             GLenum type;
             cv_type2gl_formats(internal_format, format, type ,cv_mat.type(), store_as_normalized_vals);
-            std::cout << "upload from cv_mat internal format is " << std::hex << internal_format << std::dec << '\n';
+            VLOG(2) << named("upload from cv_mat internal format is ") << std::hex << internal_format << std::dec;
 
             //do the upload to the pbo
             int size_bytes=cv_mat.step[0] * cv_mat.rows;
@@ -195,8 +200,8 @@ namespace gl{
 
         //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
         cv::Mat download_to_cv_mat(const bool denormalize=false){
-            CHECK(m_tex_storage_initialized) << "Texture storage was not initialized. Cannot download to an opencv mat";
-            CHECK(m_internal_format!=-1) << "Internal format was not initialized.";
+            CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
+            CHECK(m_internal_format!=-1) << named("Internal format was not initialized");
 
             bind();
             //get the width and height of the gl_texture
@@ -232,16 +237,21 @@ namespace gl{
         }
 
         GLint get_internal_format() const{
-            CHECK(m_internal_format!=-1) << "The texture has not been initialzied and doesn't yet have a format";
+            CHECK(m_internal_format!=-1) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }
 
-        int width() const{ LOG_IF(WARNING,m_width==0) << "Width of the texture is 0"; return m_width; };
-        int height() const{ LOG_IF(WARNING,m_height==0) << "Height of the texture is 0";return m_height; };
+        int width() const{ LOG_IF(WARNING,m_width==0) << named("Width of the texture is 0"); return m_width; };
+        int height() const{ LOG_IF(WARNING,m_height==0) << named("Height of the texture is 0");return m_height; };
 
     private:
         int m_width;
         int m_height;
+
+        std::string named(const std::string msg) const{
+            return m_name.empty()? msg : m_name + ": " + msg; 
+        }
+        std::string m_name;
 
         GLuint m_tex_id;
         // GLuint m_pbo_id;

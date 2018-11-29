@@ -25,8 +25,13 @@ namespace gl{
             set_filter_mode(GL_LINEAR);
         }
 
+        Texture3D(std::string name):
+            Texture3D(){
+            m_name=name; //we delegate the constructor to the main one but we cannot have in this intializer list more than that call.
+        }
+
         ~Texture3D(){
-            LOG(WARNING) << "Destroying texture";
+            LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
@@ -98,7 +103,7 @@ namespace gl{
 
         template <class T>
         void clear(T val){
-            CHECK(m_tex_storage_initialized) << "Texture storage not initialized. Use allocate_tex_storage_inmutable or upload data first";
+            CHECK(m_tex_storage_initialized) << named("Texture storage not initialized. Use allocate_tex_storage_inmutable or upload data first");
 
             GLenum format;
             GLenum type;
@@ -142,19 +147,24 @@ namespace gl{
         }
 
         GLint get_internal_format() const{
-            CHECK(m_internal_format!=-1) << "The texture has not been initialzied and doesn't yet have a format";
+            CHECK(m_internal_format!=-1) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }
 
-        int width() const{ LOG_IF(WARNING,m_width==0) << "Width of the texture is 0"; return m_width; };
-        int height() const{ LOG_IF(WARNING,m_height==0) << "Height of the texture is 0";return m_height; };
-        int depth() const{ LOG_IF(WARNING,m_depth==0) << "Depth of the texture is 0";return m_depth; };
+        int width() const{ LOG_IF(WARNING,m_width==0) << named("Width of the texture is 0"); return m_width; };
+        int height() const{ LOG_IF(WARNING,m_height==0) << named("Height of the texture is 0");return m_height; };
+        int depth() const{ LOG_IF(WARNING,m_depth==0) << named("Depth of the texture is 0");return m_depth; };
 
 
     private:
         int m_width;
         int m_height;
         int m_depth;
+
+        std::string named(const std::string msg) const{
+            return m_name.empty()? msg : m_name + ": " + msg; 
+        }
+        std::string m_name;
 
         GLuint m_tex_id;
         // GLuint m_pbo_id;

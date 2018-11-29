@@ -19,6 +19,7 @@ namespace gl{
         }
 
         ~VertexArrayObject(){
+            LOG(WARNING) << named("Destroying VAO");
             glDeleteVertexArrays(1, &m_id);
         }
 
@@ -47,15 +48,11 @@ namespace gl{
         
 
     private:
-        std::string err(const std::string msg){
-            if(m_name.empty()){
-                return msg;
-            }else{
-                return m_name + ": " + msg;
-            }
+        std::string named(const std::string msg) const{
+            return m_name.empty()? msg : m_name + ": " + msg; 
         }
-
         std::string m_name;
+
 
         GLuint m_id;
 

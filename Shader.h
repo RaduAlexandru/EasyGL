@@ -37,7 +37,7 @@ namespace gl{
         }
 
         ~Shader(){
-            LOG(WARNING) << err("Destroying shader program");
+            LOG(WARNING) << named("Destroying shader program");
             glUseProgram(0);
             glDeleteProgram(m_prog_id);
         }
@@ -69,17 +69,17 @@ namespace gl{
 
 
         void use() const{
-            CHECK(m_is_compiled) << err("Program is not compiled! Use prog.compile() first");
+            CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
             glUseProgram(m_prog_id);
         }
 
         template <class T>
         void bind_texture(const T& tex, const std::string& uniform_name){
-            CHECK(m_is_compiled) << err("Program is not compiled! Use prog.compile() first");
+            CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
 
             //get the location in shader for the sampler
             GLint shader_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
-            LOG_IF(WARNING,shader_location==-1) << err("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff";
+            LOG_IF(WARNING,shader_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff";
 
             //each texture must be bound to a texture unit. We store the mapping from the textures to their corresponding texture unit in a map for later usage
             int cur_texture_unit;
@@ -92,7 +92,7 @@ namespace gl{
                 //the sampler was used before and the texture was already assigned to a certain texture unit, We bind the texture to the same one
                 cur_texture_unit=tex_sampler2texture_units[uniform_name];
             }
-            CHECK(m_nr_texture_units_used<m_max_allowed_texture_units) << err("You used too many texture units! Try to bind less textures to the shader");
+            CHECK(m_nr_texture_units_used<m_max_allowed_texture_units) << named("You used too many texture units! Try to bind less textures to the shader");
 
             glActiveTexture(GL_TEXTURE0 + cur_texture_unit);
             tex.bind(); //bind the texure to a certain texture unit
@@ -116,7 +116,7 @@ namespace gl{
                 cur_image_unit=image2image_units[uniform_name];
             }
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
-            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << err("You used too many image units! Try to bind less images to the shader");
+            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
 
 
@@ -138,7 +138,7 @@ namespace gl{
                 cur_image_unit=image2image_units[uniform_name];
             }
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
-            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << err("You used too many image units! Try to bind less images to the shader");
+            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
             GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_TRUE, 0, access, tex.get_internal_format()));
         }
@@ -166,7 +166,7 @@ namespace gl{
                 cur_image_unit=image2image_units[uniform_name];
             }
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
-            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << err("You used too many image units! Try to bind less images to the shader");
+            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
             GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_TRUE, 0, access, tex.get_internal_format()));
         }
@@ -186,7 +186,7 @@ namespace gl{
                 cur_image_unit=image2image_units[uniform_name];
             }
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
-            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << err("You used too many image units! Try to bind less images to the shader");
+            CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
             glBindBufferBase(buf.get_target(), cur_image_unit, buf.get_buf_id());
         }
@@ -194,7 +194,7 @@ namespace gl{
         GLint get_attrib_location(const std::string attrib_name) const{
             this->use();
             GLint attribute_location = glGetAttribLocation(m_prog_id, attrib_name.c_str());
-            LOG_IF(WARNING,attribute_location==-1) << err("Attribute location for name ") << attrib_name << " is invalid. Are you sure you are using the attribute in the shader? Maybe you are also binding too many stuff.";
+            LOG_IF(WARNING,attribute_location==-1) << named("Attribute location for name ") << attrib_name << " is invalid. Are you sure you are using the attribute in the shader? Maybe you are also binding too many stuff.";
             return attribute_location;
         }
 
@@ -229,7 +229,7 @@ namespace gl{
         }
 
         void dispatch(const int total_x, const int total_y, const int local_size_x, const int local_size_y){
-            CHECK(m_is_compute_shader) << err("Program is not a compute shader so we cannot dispatch it");
+            CHECK(m_is_compute_shader) << named("Program is not a compute shader so we cannot dispatch it");
             glDispatchCompute(round_up_to_nearest_multiple(total_x,local_size_x)/local_size_x,
                               round_up_to_nearest_multiple(total_y,local_size_y)/local_size_y, 1 );
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -252,19 +252,15 @@ namespace gl{
         std::unordered_map<std::string, int > tex_sampler2texture_units;
         std::unordered_map<std::string, int > image2image_units;
 
-        std::string err(const std::string msg) const{
-            if(m_name.empty()){
-                return msg;
-            }else{
-                return m_name + ": " + msg;
-            }
-        }
+        std::string named(const std::string msg) const{
+            return m_name.empty()? msg : m_name + ": " + msg; 
+        } 
 
 
         GLint get_uniform_location(std::string uniform_name){
             this->use();
             GLint uniform_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
-            LOG_IF(WARNING,uniform_location==-1) << err("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
+            LOG_IF(WARNING,uniform_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
             return uniform_location;
         }
 
@@ -309,8 +305,8 @@ namespace gl{
             if (status != GL_TRUE){
                 char buffer[512];
                 glGetProgramInfoLog(program_shader, 512, NULL, buffer);
-                LOG(ERROR) << err("Linker error: ") << std::endl << buffer;
-                LOG(FATAL) << err("Program linker error");
+                LOG(ERROR) << named("Linker error: ") << std::endl << buffer;
+                LOG(FATAL) << named("Program linker error");
             }
 
         }
@@ -323,7 +319,7 @@ namespace gl{
             GLuint s = glCreateShader(type);
             if(s == 0){
                 fprintf(stderr,"Error: load_shader() failed to create shader.\n");
-                LOG(FATAL) << err("Shader failed to be created. This should not happen. Maybe something is wrong with the GL context or your graphics card driver?");
+                LOG(FATAL) << named("Shader failed to be created. This should not happen. Maybe something is wrong with the GL context or your graphics card driver?");
                 return 0;
             }
             // Pass shader source string
@@ -342,12 +338,12 @@ namespace gl{
                 std::vector<GLchar> errorLog(maxLength);
                 glGetShaderInfoLog(s, maxLength, &maxLength, &errorLog[0]);
 
-                LOG(ERROR) << err("Error: compiling shader") << std::endl << &errorLog[0];
+                LOG(ERROR) << named("Error: compiling shader") << std::endl << &errorLog[0];
 
                 // Provide the infolog in whatever manor you deem best.
                 // Exit with failure.
                 glDeleteShader(s); // Don't leak the shader.
-                LOG(FATAL) << err("Shader failed to compile");
+                LOG(FATAL) << named("Shader failed to compile");
                 return -1;
             }
 
@@ -391,7 +387,7 @@ namespace gl{
             }
 
             //we went through all of them and didn't find a valid one
-            LOG(FATAL) << err("Texture is not valid for ImageLoadStore operations. Check the valid list of internal formats at https://www.khronos.org/opengl/wiki/Image_Load_Store");
+            LOG(FATAL) << named("Texture is not valid for ImageLoadStore operations. Check the valid list of internal formats at https://www.khronos.org/opengl/wiki/Image_Load_Store");
 
 
         }
@@ -400,7 +396,7 @@ namespace gl{
         inline std::string file_to_string (const std::string &filename){
             std::ifstream t(filename);
             if (!t.is_open()){
-                LOG(FATAL) << err("Cannot open file ") << filename;
+                LOG(FATAL) << named("Cannot open file ") << filename;
             }
             return std::string((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         }
