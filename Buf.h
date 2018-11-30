@@ -29,9 +29,12 @@ namespace gl{
             glDeleteBuffers(1, &m_buf_id);
         }
 
-        //rule of three    
-        Buf(const Buf& that) = delete;
-        Buf& operator=(const Buf& that) = delete;
+        //rule of five (make the class non copyable)   
+        Buf(const Buf& other) = delete; // copy ctor
+        Buf& operator=(const Buf& other) = delete; // assignment op
+        // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
+        Buf (Buf && other) = default; //move ctor
+        Buf & operator=(Buf &&) = default; //move assignment
 
 
         void set_target(const GLenum target){

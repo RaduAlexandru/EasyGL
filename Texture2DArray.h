@@ -36,9 +36,13 @@ namespace gl{
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
 
-        //rule of three    
-        Texture2DArray(const Texture2DArray& that) = delete;
-        Texture2DArray& operator=(const Texture2DArray& that) = delete;
+        //rule of five (make the class non copyable)   
+        Texture2DArray(const Texture2DArray& other) = delete; // copy ctor
+        Texture2DArray& operator=(const Texture2DArray& other) = delete; // assignment op
+        // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
+        Texture2DArray (Texture2DArray && other) = default; //move ctor
+        Texture2DArray & operator=(Texture2DArray &&) = default; //move assignment
+
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_2D_ARRAY, m_tex_id);

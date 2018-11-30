@@ -23,6 +23,13 @@ namespace gl{
             glDeleteVertexArrays(1, &m_id);
         }
 
+        //rule of five (make the class non copyable)   
+        VertexArrayObject(const VertexArrayObject& other) = delete; // copy ctor
+        VertexArrayObject& operator=(const VertexArrayObject& other) = delete; // assignment op
+        // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
+        VertexArrayObject (VertexArrayObject && other) = default; //move ctor
+        VertexArrayObject & operator=(VertexArrayObject &&) = default; //move assignment
+
         void set_name(const std::string name){
             m_name=name;
         }

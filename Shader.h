@@ -42,9 +42,12 @@ namespace gl{
             glDeleteProgram(m_prog_id);
         }
 
-        //rule of three    
-        Shader(const Shader& that) = delete;
-        Shader& operator=(const Shader& that) = delete;
+        //rule of five (make the class non copyable)   
+        Shader(const Shader& other) = delete; // copy ctor
+        Shader& operator=(const Shader& other) = delete; // assignment op
+        // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
+        Shader (Shader && other) = default; //move ctor
+        Shader & operator=(Shader &&) = default; //move assignment
 
         //compiles a program from various shaders
         void compile(const std::string &compute_shader_filename){

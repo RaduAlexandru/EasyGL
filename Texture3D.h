@@ -36,9 +36,13 @@ namespace gl{
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
 
-        //rule of three    
-        Texture3D(const Texture3D& that) = delete;
-        Texture3D& operator=(const Texture3D& that) = delete;
+        //rule of five (make the class non copyable)   
+        Texture3D(const Texture3D& other) = delete; // copy ctor
+        Texture3D& operator=(const Texture3D& other) = delete; // assignment op
+        // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
+        Texture3D (Texture3D && other) = default; //move ctor
+        Texture3D & operator=(Texture3D &&) = default; //move assignment
+
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_3D, m_tex_id);
