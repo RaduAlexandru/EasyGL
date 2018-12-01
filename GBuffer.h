@@ -121,6 +121,9 @@ namespace gl{
                     return m_textures[i];
                 }
             }
+            if(m_depth_tex.name()==name){
+                return m_depth_tex;
+            }
             LOG(WARNING) << named("No texture with name: " + name);
         }
 
