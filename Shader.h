@@ -11,6 +11,7 @@
 #include "Texture2DArray.h"
 #include "Texture3D.h"
 #include "Buf.h"
+#include "GBuffer.h"
 
 #include <iostream>
 
@@ -236,6 +237,75 @@ namespace gl{
             glDispatchCompute(round_up_to_nearest_multiple(total_x,local_size_x)/local_size_x,
                               round_up_to_nearest_multiple(total_y,local_size_y)/local_size_y, 1 );
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        }
+
+        //output2tex_list is a list of pair which map from the output of a shader to the corresponding name of the texture that we want to write into. 
+        void draw_into(const GBuffer& gbuffer, std::initializer_list<  std::pair<std::string, std::string> > output2tex_list){
+            CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
+
+            int max_location=-1; //will be used to determine how many drawbuffers should be used by seeing how many outputs does the fragment shader actually use
+            for(auto output2tex : output2tex_list){
+                std::string frag_out_name=output2tex.first; 
+                int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
+                std::string tex_name=output2tex.second; 
+                int attachment_nr=gbuffer.attachment_nr(tex_name);
+                LOG_IF(WARNING, frag_out_location==-1) << named("Fragment output location for name " + frag_out_name + " is either not declared in the shader or not being used for outputting anything.");
+                // std::cout << frag_out_name << " with location " << frag_out_location <<  " will write into " << tex_name << " with attachment nr" << attachment_nr << '\n';
+
+                if(frag_out_location>max_location){
+                    max_location=frag_out_location;
+                }
+            }
+            int nr_draw_buffers=max_location+1; //if max location is 1 it means we use locations 0 and 1 so therefore we need 2 drawbuffers
+            GLenum draw_buffers[nr_draw_buffers];
+            for(int i=0; i<nr_draw_buffers; i++){
+                draw_buffers[i]=GL_NONE; //initialize to gl_none
+            }
+
+            //fill the draw buffers 
+             for(auto output2tex : output2tex_list){
+                std::string frag_out_name=output2tex.first; 
+                int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
+                std::string tex_name=output2tex.second; 
+                int attachment_nr=gbuffer.attachment_nr(tex_name);
+
+                draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0+attachment_nr;
+
+                // std::cout << '\n';
+                // std::cout << "frag_out_location" << frag_out_location << "set to attachment" << attachment_nr << '\n';
+            }
+
+            // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into 
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gbuffer.get_fbo_id());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDrawBuffers(nr_draw_buffers, draw_buffers);
+
+
+//             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
+
+//             clear deph buffer 
+
+// 	GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, 
+// 						     GL_COLOR_ATTACHMENT1,
+// 						     GL_COLOR_ATTACHMENT2 };
+
+// // glDrawBuffers(ARRAY_SIZE_IN_ELEMENTS(DrawBuffers), DrawBuffers);
+//             // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into 
+//             for(int i=0; i<map.size(); i++){
+//                 std::string tex_name=map.first 
+//                 int attachment_nr=gbuffer.attachment_nr(tex_name);
+//                 std::string frag_out_name=map.second 
+//                 int frag_out_location=glGetFragDataLocation(m_prog_id, "frag_out_name");
+
+//                 need to bind the layout specified into the shader to the corrcct indexed attachment into our drawbuffers enum 
+//                 draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0+attachment_nr;
+//             }
+
+//             glDrawBuffers(8, draw_buffers);
+
+
+
+
         }
 
         int get_prog_id() const{

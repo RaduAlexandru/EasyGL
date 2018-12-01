@@ -54,6 +54,14 @@ namespace gl{
         Texture2D (Texture2D && other) = default; //move ctor
         Texture2D & operator=(Texture2D &&) = default; //move assignment
 
+        void set_name(const std::string name){
+            m_name=name;
+        }
+
+        std::string name(){
+            return m_name;
+        }
+
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
@@ -65,7 +73,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
-        void upload_data(GLint internal_format, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data_ptr, int size_bytes){
+        void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
             //todo needs an overload that doesnt take the internal format, format and type and assumes that the ftexture storage is already intiialized
             m_width=width;
             m_height=height;
