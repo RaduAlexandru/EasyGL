@@ -43,6 +43,14 @@ namespace gl{
         Texture3D (Texture3D && other) = default; //move ctor
         Texture3D & operator=(Texture3D &&) = default; //move assignment
 
+        void set_name(const std::string name){
+            m_name=name;
+        }
+
+        std::string name() const{
+            return m_name;
+        }
+
 
         void set_wrap_mode(const GLenum wrap_mode){
             glBindTexture(GL_TEXTURE_3D, m_tex_id);
@@ -146,7 +154,7 @@ namespace gl{
             return m_tex_id;
         }
 
-        bool get_tex_storage_initialized (){
+        bool get_tex_storage_initialized () const{
             return m_tex_storage_initialized;
         }
 

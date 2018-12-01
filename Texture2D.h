@@ -58,7 +58,7 @@ namespace gl{
             m_name=name;
         }
 
-        std::string name(){
+        std::string name() const{
             return m_name;
         }
 
@@ -290,7 +290,7 @@ namespace gl{
             return m_tex_id;
         }
 
-        bool get_tex_storage_initialized (){
+        bool get_tex_storage_initialized () const{
             return m_tex_storage_initialized;
         }
 

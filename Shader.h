@@ -80,6 +80,7 @@ namespace gl{
         template <class T>
         void bind_texture(const T& tex, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
+            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has not storage initialized");
 
             //get the location in shader for the sampler
             GLint shader_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
@@ -105,6 +106,8 @@ namespace gl{
 
         //bind with a certain access mode a 2D image
         void bind_image(const gl::Texture2D& tex, const GLenum access, const std::string& uniform_name){
+            CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
+            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
 
             check_format_is_valid_for_image_bind(tex);
 
@@ -129,6 +132,9 @@ namespace gl{
 
         //bind all layers of the Texture Array
         void bind_image(const gl::Texture2DArray& tex,  const GLenum access, const std::string& uniform_name){
+            CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
+            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+
             check_format_is_valid_for_image_bind(tex);
 
             int cur_image_unit;
@@ -157,6 +163,9 @@ namespace gl{
 
         //bind all layers of Texture 3D
         void bind_image(const gl::Texture3D& tex,  const GLenum access, const std::string& uniform_name){
+            CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
+            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+
             check_format_is_valid_for_image_bind(tex);
 
             int cur_image_unit;
@@ -279,32 +288,6 @@ namespace gl{
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gbuffer.get_fbo_id());
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glDrawBuffers(nr_draw_buffers, draw_buffers);
-
-
-//             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
-
-//             clear deph buffer 
-
-// 	GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, 
-// 						     GL_COLOR_ATTACHMENT1,
-// 						     GL_COLOR_ATTACHMENT2 };
-
-// // glDrawBuffers(ARRAY_SIZE_IN_ELEMENTS(DrawBuffers), DrawBuffers);
-//             // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into 
-//             for(int i=0; i<map.size(); i++){
-//                 std::string tex_name=map.first 
-//                 int attachment_nr=gbuffer.attachment_nr(tex_name);
-//                 std::string frag_out_name=map.second 
-//                 int frag_out_location=glGetFragDataLocation(m_prog_id, "frag_out_name");
-
-//                 need to bind the layout specified into the shader to the corrcct indexed attachment into our drawbuffers enum 
-//                 draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0+attachment_nr;
-//             }
-
-//             glDrawBuffers(8, draw_buffers);
-
-
-
 
         }
 
