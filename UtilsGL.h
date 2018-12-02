@@ -198,7 +198,7 @@ inline int gl_internal_format2cv_type(const GLint internal_format){
 }
 
 
-inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& type, const int cv_type, const bool store_as_normalized_vals){
+inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& type, const int cv_type, const bool flip_red_blue, const bool store_as_normalized_vals){
 
 
     //from the cv format get the corresponding gl internal_format, format and type
@@ -210,7 +210,14 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R8; format=GL_RED;  break;
            // case 3: internal_format=GL_RGB8; format=GL_BGR;break;
-           case 4: internal_format=GL_RGBA8; format=GL_BGRA;break;
+           case 4: 
+                   internal_format=GL_RGBA8; 
+                   if(flip_red_blue){
+                       format=GL_BGRA;
+                   }else{
+                       format=GL_RGBA;
+                   }
+                   break;
            default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
         }
     }else if(depth==CV_8U && !store_as_normalized_vals){
@@ -218,7 +225,14 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R8UI; format=GL_RED_INTEGER;  break;
            // case 3: internal_format=GL_RGB8UI; format=GL_BGR_INTEGER;break;
-           case 4: internal_format=GL_RGBA8UI; format=GL_BGRA_INTEGER;break;
+           case 4: 
+                    internal_format=GL_RGBA8UI; 
+                    if(flip_red_blue){
+                        format=GL_BGRA_INTEGER;
+                    }else{
+                        format=GL_RGBA_INTEGER;
+                    }
+                    break;
            default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
         }
     }
@@ -227,7 +241,14 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R32F; format=GL_RED;  break;
            // case 3: internal_format=GL_RGB32F; format=GL_BGR; break;
-           case 4: internal_format=GL_RGBA32F;  format=GL_BGRA;break;
+           case 4: 
+                    internal_format=GL_RGBA32F;  
+                    if(flip_red_blue){
+                        format=GL_BGRA;
+                    }else{
+                        format=GL_RGBA;
+                    }
+                    break;
            default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
         }
     }else{
@@ -239,14 +260,14 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 
 ///from the internal format of the GL representation get the possible type and format that was used for inputing data into that texture
-inline void gl_internal_format2format_and_type(GLenum& format, GLenum& type, const GLint& internal_format, const bool denormalize){
+inline void gl_internal_format2format_and_type(GLenum& format, GLenum& type, const GLint& internal_format, const bool flip_red_blue, const bool denormalize){
     //a way of doing it without replicating code is by using the above two functions
 
     int cv_type=gl_internal_format2cv_type(internal_format);
 
     //from the cv format get the corresponding gl internal_format, format and type
     GLint returned_internal_format;
-    cv_type2gl_formats(returned_internal_format, format, type, cv_type, denormalize);
+    cv_type2gl_formats(returned_internal_format, format, type, cv_type, flip_red_blue, denormalize);
 
     //santy check. The internal format that was passed in and the one after the roundabout should be the same
     // CHECK(returned_internal_format==internal_format) << "Something went wrong when we went from gl to cv and back to gl type. Original internal format was " << std::hex << internal_format << " but we got back from the roundabut " <<returned_internal_format << std::dec ;
@@ -255,4 +276,111 @@ inline void gl_internal_format2format_and_type(GLenum& format, GLenum& type, con
 //sometimes you want to allocate memory that is multiple of 64 bytes, so therefore you want to allocate more memory but you need a nr that is divisible by 64
 inline int round_up_to_nearest_multiple(const int number, const int divisor){
  return number - number % divisor + divisor * !!(number % divisor);
+}
+
+inline bool is_internal_format_valid(const GLenum internal_format){
+
+    //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+    std::vector<GLenum> allowed_internal_formats;
+
+    allowed_internal_formats.push_back(GL_R16F); 
+    allowed_internal_formats.push_back(GL_RG16F);
+    allowed_internal_formats.push_back(GL_RGBA16F);
+    allowed_internal_formats.push_back(GL_R32F);
+    allowed_internal_formats.push_back(GL_RG32F);
+    allowed_internal_formats.push_back(GL_RGBA32F);
+    allowed_internal_formats.push_back(GL_R8I);
+    allowed_internal_formats.push_back(GL_R8UI);
+    allowed_internal_formats.push_back(GL_R16I);
+    allowed_internal_formats.push_back(GL_R16UI);
+    allowed_internal_formats.push_back(GL_R32I);
+    allowed_internal_formats.push_back(GL_R32UI);
+    allowed_internal_formats.push_back(GL_RG8I);
+    allowed_internal_formats.push_back(GL_RG8UI);
+    allowed_internal_formats.push_back(GL_RG16I);
+    allowed_internal_formats.push_back(GL_RG16UI);
+    allowed_internal_formats.push_back(GL_RG32I);
+    allowed_internal_formats.push_back(GL_RG32UI);
+    allowed_internal_formats.push_back(GL_RGBA8I);
+    allowed_internal_formats.push_back(GL_RGBA8UI);
+    allowed_internal_formats.push_back(GL_RGBA16I);
+    allowed_internal_formats.push_back(GL_RGBA16UI);
+    allowed_internal_formats.push_back(GL_RGBA32I);
+    allowed_internal_formats.push_back(GL_RGBA32UI);
+    allowed_internal_formats.push_back(GL_DEPTH_COMPONENT32F);
+    allowed_internal_formats.push_back(GL_DEPTH_COMPONENT24);
+    allowed_internal_formats.push_back(GL_DEPTH_COMPONENT16);
+
+    //check that we are a valid one
+    for (size_t i = 0; i < allowed_internal_formats.size(); i++) {
+        if(internal_format==allowed_internal_formats[i]){
+            return true; //This is a valid format
+        }
+    }
+
+    return false;
+}
+
+inline bool is_format_valid(const GLenum format){
+
+    //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+    std::vector<GLenum> allowed_formats;
+    allowed_formats.push_back(GL_RED);
+    allowed_formats.push_back(GL_RG);
+    allowed_formats.push_back(GL_RGB);
+    allowed_formats.push_back(GL_BGR);
+    allowed_formats.push_back(GL_RGBA);
+    allowed_formats.push_back(GL_BGRA);
+    allowed_formats.push_back(GL_RED_INTEGER);
+    allowed_formats.push_back(GL_RG_INTEGER);
+    allowed_formats.push_back(GL_RGB_INTEGER);
+    allowed_formats.push_back(GL_BGR_INTEGER);
+    allowed_formats.push_back(GL_RGBA_INTEGER);
+    allowed_formats.push_back(GL_BGRA_INTEGER);
+    allowed_formats.push_back(GL_STENCIL_INDEX);
+    allowed_formats.push_back(GL_DEPTH_COMPONENT);
+    allowed_formats.push_back(GL_DEPTH_STENCIL);
+
+    //check that we are a valid one
+    for (size_t i = 0; i < allowed_formats.size(); i++) {
+        if(format==allowed_formats[i]){
+            return true; //This is a valid format
+        }
+    }
+
+    return false;
+}
+
+inline bool is_type_valid(const GLenum type){
+
+    //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+    std::vector<GLenum> allowed_types;
+    allowed_types.push_back(GL_UNSIGNED_BYTE);
+    allowed_types.push_back(GL_BYTE);
+    allowed_types.push_back(GL_UNSIGNED_SHORT);
+    allowed_types.push_back(GL_SHORT);
+    allowed_types.push_back(GL_UNSIGNED_INT);
+    allowed_types.push_back(GL_INT);
+    allowed_types.push_back(GL_FLOAT);
+    allowed_types.push_back(GL_UNSIGNED_BYTE_3_3_2);
+    allowed_types.push_back(GL_UNSIGNED_BYTE_2_3_3_REV);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_5_6_5);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_5_6_5_REV);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_4_4_4_4);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_4_4_4_4_REV);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_5_5_5_1);
+    allowed_types.push_back(GL_UNSIGNED_SHORT_1_5_5_5_REV);
+    allowed_types.push_back(GL_UNSIGNED_INT_8_8_8_8);
+    allowed_types.push_back(GL_UNSIGNED_INT_8_8_8_8_REV);
+    allowed_types.push_back(GL_UNSIGNED_INT_10_10_10_2);
+    allowed_types.push_back(GL_UNSIGNED_INT_2_10_10_10_REV);
+
+    //check that we are a valid one
+    for (size_t i = 0; i < allowed_types.size(); i++) {
+        if(type==allowed_types[i]){
+            return true; //This is a valid format
+        }
+    }
+
+    return false;
 }

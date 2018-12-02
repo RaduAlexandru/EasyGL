@@ -6,7 +6,6 @@
 #include "opencv2/opencv.hpp"
 
 #include "UtilsGL.h"
-// #include "stereo_cost_vol_dense/MiscUtils.h"
 
 // #include "stereo_cost_vol_dense/Profiler.h"
 
@@ -74,6 +73,9 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
+            CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+            CHECK(is_format_valid(format)) << named("Format not valid");
+            CHECK(is_type_valid(type)) << named("Type not valid");
             //todo needs an overload that doesnt take the internal format, format and type and assumes that the ftexture storage is already intiialized
             m_width=width;
             m_height=height;
@@ -82,17 +84,17 @@ namespace gl{
             m_type=type;
 
             // bind the texture and PBO
-            glBindTexture(GL_TEXTURE_2D, m_tex_id);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]);
+            GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
+            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]) );
 
 
 
             if(!m_pbo_storages_initialized[m_cur_pbo_idx]){
-                glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW); //allocate storage for pbo
+                GL_C (glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW) ); //allocate storage for pbo
                 m_pbo_storages_initialized[m_cur_pbo_idx]=true;
             }
             if(!m_tex_storage_initialized){
-                glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
+                GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
                 m_tex_storage_initialized=true;
             }
 
@@ -106,48 +108,51 @@ namespace gl{
             // }
 
             //attempt 2 to update the pbo fast, mapping and doing a memcpy is slower
-            glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, size_bytes, data_ptr);
+            GL_C( glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, size_bytes, data_ptr) );
 
 
             // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0);
+            GL_C( glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0) );
 
 
             // it is good idea to release PBOs with ID 0 after use.
             // Once bound with 0, all pixel operations behave normal ways.
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
 
             m_cur_pbo_idx=(m_cur_pbo_idx+1)%m_nr_pbos;
         }
 
 
-        // //easy way to just get a cv mat there, does internally an upload to pbo and schedules a dma
-        // //by default the values will get transfered to the gpu and get normalized to [0,1] therefore an rgb texture of unsigned bytes will be read as floats from the shader with sampler2D. However sometimes we might want to use directly the integers stored there, for example when we have a semantic texture and the nr range from [0,nr_classes]. Then we set normalize to false and in the shader we acces the texture with usampler2D
-        // void upload_from_cv_mat(const cv::Mat& cv_mat, const bool store_as_normalized_vals=true){
-        //     //TODO needs to be rechecked as we now store as class member the internal format, format and type
+        //easy way to just get a cv mat there, does internally an upload to pbo and schedules a dma
+        //by default the values will get transfered to the gpu and get normalized to [0,1] therefore an rgb texture of unsigned bytes will be read as floats from the shader with sampler2D. However sometimes we might want to use directly the integers stored there, for example when we have a semantic texture and the nr range from [0,nr_classes]. Then we set normalize to false and in the shader we acces the texture with usampler2D
+        void upload_from_cv_mat(const cv::Mat& cv_mat, const bool flip_red_blue=true, const bool store_as_normalized_vals=true){
+            //TODO needs to be rechecked as we now store as class member the internal format, format and type
 
-        //     m_width=cv_mat.cols;
-        //     m_height=cv_mat.rows;
-        //     //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
+            m_width=cv_mat.cols;
+            m_height=cv_mat.rows;
+            //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
 
-        //     //the best format for fast upload using pbos and dmo is
-        //     /*
-        //     internalformal: GL_RGBA
-        //     format: GL_BGRA
-        //     type: GL_UNSIGNED_INT_8_8_8_8_REV
-        //     */
+            //the best format for fast upload using pbos and dmo is
+            /*
+            internalformal: GL_RGBA
+            format: GL_BGRA
+            type: GL_UNSIGNED_INT_8_8_8_8_REV
+            */
 
-        //     //from the cv format get the corresponding gl internal_format, format and type
-        //     GLint internal_format;
-        //     GLenum format;
-        //     GLenum type;
-        //     cv_type2gl_formats(internal_format, format, type ,cv_mat.type(), store_as_normalized_vals);
-        //     VLOG(2) << named("upload from cv_mat internal format is ") << std::hex << internal_format << std::dec;
+            //from the cv format get the corresponding gl internal_format, format and type
+            GLint internal_format;
+            GLenum format;
+            GLenum type;
+            cv_type2gl_formats(internal_format, format, type ,cv_mat.type(), flip_red_blue, store_as_normalized_vals);
 
-        //     //do the upload to the pbo
-        //     int size_bytes=cv_mat.step[0] * cv_mat.rows;
-        //     upload_data(internal_format, cv_mat.cols, cv_mat.rows, format, type, cv_mat.ptr(), size_bytes);
-        // }
+            CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+            CHECK(is_format_valid(format)) << named("Format not valid");
+            CHECK(is_type_valid(type)) << named("Type not valid");
+
+            //do the upload to the pbo
+            int size_bytes=cv_mat.step[0] * cv_mat.rows;
+            upload_data(internal_format, format, type, cv_mat.cols, cv_mat.rows, cv_mat.ptr(), size_bytes);
+        }
 
 
         // void upload_without_pbo(GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data_ptr){
@@ -174,6 +179,10 @@ namespace gl{
 
         //allocate mutable texture storage and leave it uninitialized
         void allocate_tex_storage(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
+            CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+            CHECK(is_format_valid(format)) << named("Format not valid");
+            CHECK(is_type_valid(type)) << named("Type not valid");
+
             m_width=width;
             m_height=height;
             m_internal_format=internal_format;
@@ -190,6 +199,9 @@ namespace gl{
 
         //allocate inmutable texture storage
         void allocate_tex_storage_inmutable(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
+            CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+            CHECK(is_format_valid(format)) << named("Format not valid");
+            CHECK(is_type_valid(type)) << named("Type not valid");
             CHECK(!m_tex_storage_inmutable) << named("You already allocated texture as inmutable. To resize you can delete and recreate the texture or use mutable storage with allocate_tex_storage()");
             m_width=width;
             m_height=height;

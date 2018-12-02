@@ -15,6 +15,8 @@
 
 #include <iostream>
 
+#include <Eigen/Core>
+
 namespace gl{
     class Shader{
     public:
@@ -226,24 +228,35 @@ namespace gl{
             glUniform1f(uniform_location, val);
         }
 
-        void uniform_v2_float(const GLfloat* val, const std::string uniform_name){
+        void uniform_v2_float(const Eigen::Vector2f vec, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
-            glUniform2fv(uniform_location, 1, val);
+            glUniform2fv(uniform_location, 1, vec.data());
         }
 
-        void uniform_v3_float(const GLfloat* val, const std::string uniform_name){
+        void uniform_v3_float(const Eigen::Vector3f vec, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
-            glUniform3fv(uniform_location, 1, val);
+            glUniform3fv(uniform_location, 1, vec.data());
         }
 
-        void uniform_3x3(const GLfloat* val, const std::string uniform_name){
-            GLint uniform_location=get_uniform_location(uniform_name);
-            glUniformMatrix3fv(uniform_location, 1, GL_FALSE, val);
+        //sends an array of vec3 to the shader. Inside the shader we declare it as vec3 array[SIZE] where size must correspond to the one being sent 
+        void uniform_array_v3_float(const Eigen::MatrixXf mat, const std::string uniform_name){
+            CHECK(mat.cols()==3) << named("The matrix should have 3 columns because we expect a matrix with N rows and 3 columns for the vec3 array.");
+            for(int i=0; i<mat.rows(); i++){ 
+                std::string uniform_array_name;
+                uniform_array_name=uniform_name+"["+std::to_string(i)+"]";
+                GLint uniform_location=get_uniform_location(uniform_array_name);
+                glUniform3fv(uniform_location, 1, mat.row(i).data()); 
+            }
         }
 
-        void uniform_4x4(const GLfloat* val, const std::string uniform_name){
+        void uniform_3x3(const Eigen::Matrix3f mat, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
-            glUniformMatrix4fv(uniform_location, 1, GL_FALSE, val);
+            glUniformMatrix3fv(uniform_location, 1, GL_FALSE, mat.data());
+        }
+
+        void uniform_4x4(const Eigen::Matrix4f mat, const std::string uniform_name){
+            GLint uniform_location=get_uniform_location(uniform_name);
+            glUniformMatrix4fv(uniform_location, 1, GL_FALSE, mat.data());
         }
 
         void dispatch(const int total_x, const int total_y, const int local_size_x, const int local_size_y){

@@ -113,17 +113,17 @@ namespace gl{
             m_tex_storage_initialized=true;
         }
 
-        template <class T>
-        void clear(T val){
-            CHECK(m_tex_storage_initialized) << named("Texture storage not initialized. Use allocate_tex_storage_inmutable or upload data first");
+        // template <class T>
+        // void clear(T val){
+        //     CHECK(m_tex_storage_initialized) << named("Texture storage not initialized. Use allocate_tex_storage_inmutable or upload data first");
 
-            GLenum format;
-            GLenum type;
-            gl_internal_format2format_and_type(format,type, m_internal_format, false);
+        //     GLenum format;
+        //     GLenum type;
+        //     gl_internal_format2format_and_type(format,type, m_internal_format, false);
 
-            std::vector<T> clear_color(4, val);
-            glClearTexSubImage( m_tex_id , 0, 0,0,0,  m_width, m_height, m_depth, format, type, clear_color.data());
-        }
+        //     std::vector<T> clear_color(4, val);
+        //     glClearTexSubImage( m_tex_id , 0, 0,0,0,  m_width, m_height, m_depth, format, type, clear_color.data());
+        // }
 
         void upload_without_pbo(GLint level, GLint xoffset, GLint yoffset,GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* data_ptr){
             glBindTexture(GL_TEXTURE_3D, m_tex_id);
