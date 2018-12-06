@@ -110,8 +110,9 @@ namespace gl{
         void bind_image(const gl::Texture2D& tex, const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
             CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
 
-            check_format_is_valid_for_image_bind(tex);
+            // check_format_is_valid_for_image_bind(tex);
 
 
             int cur_image_unit;
@@ -136,8 +137,9 @@ namespace gl{
         void bind_image(const gl::Texture2DArray& tex,  const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
             CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
 
-            check_format_is_valid_for_image_bind(tex);
+            // check_format_is_valid_for_image_bind(tex);
 
             int cur_image_unit;
             if(image2image_units.find (uniform_name) == image2image_units.end()){
@@ -167,8 +169,8 @@ namespace gl{
         void bind_image(const gl::Texture3D& tex,  const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
             CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
-
-            check_format_is_valid_for_image_bind(tex);
+            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
+            // check_format_is_valid_for_image_bind(tex);
 
             int cur_image_unit;
             if(image2image_units.find (uniform_name) == image2image_units.end()){
@@ -429,64 +431,64 @@ namespace gl{
         }
 
 
-        //only formats of 1,2 and 4 channels are allowed for ImageLoadStore. List is here https://www.khronos.org/opengl/wiki/Image_Load_Store
-        template <class T>
-        void check_format_is_valid_for_image_bind(const T& tex){
-            GLint internal_format;
-            internal_format=tex.get_internal_format();
+        // //only formats of 1,2 and 4 channels are allowed for ImageLoadStore. List is here https://www.khronos.org/opengl/wiki/Image_Load_Store
+        // template <class T>
+        // void check_format_is_valid_for_image_bind(const T& tex){
+        //     GLint internal_format;
+        //     internal_format=tex.get_internal_format();
 
-            std::vector<GLint> allowed_internal_formats;
-            allowed_internal_formats.push_back(GL_RGBA32F);
-            allowed_internal_formats.push_back(GL_RGBA16F);
-            allowed_internal_formats.push_back(GL_RG32F);
-            allowed_internal_formats.push_back(GL_RG16F);
-            // allowed_internal_formats.push_back(GL_R11F_G11F_B10F); no channel 3 allowed because it will get translated to 4 channels either way
-            allowed_internal_formats.push_back(GL_R32F);
-            allowed_internal_formats.push_back(GL_R16F);
-            // allowed_internal_formats.push_back(GL_RGBA16); //ambigous, I prefer the version with RGBA16UI or RGBA16I
-            // allowed_internal_formats.push_back(GL_RGB10_A2);
-            // allowed_internal_formats.push_back(GL_RGBA8);
-            // allowed_internal_formats.push_back(GL_RG16);
-            // allowed_internal_formats.push_back(GL_RG8);
-            // allowed_internal_formats.push_back(GL_R16);
-            // allowed_internal_formats.push_back(GL_R8);
-            allowed_internal_formats.push_back(GL_RGBA16_SNORM);
-            allowed_internal_formats.push_back(GL_RGBA8_SNORM);
-            allowed_internal_formats.push_back(GL_RG16_SNORM);
-            allowed_internal_formats.push_back(GL_RG8_SNORM);
-            allowed_internal_formats.push_back(GL_R16_SNORM);
-            allowed_internal_formats.push_back(GL_RGBA32UI);	
-            allowed_internal_formats.push_back(GL_RGBA16UI);	
-            allowed_internal_formats.push_back(GL_RGB10_A2UI); 	
-            allowed_internal_formats.push_back(GL_RGBA8UI); 	
-            allowed_internal_formats.push_back(GL_RG32UI); 	
-            allowed_internal_formats.push_back(GL_RG16UI); 	
-            allowed_internal_formats.push_back(GL_RG8UI); 	
-            allowed_internal_formats.push_back(GL_R32UI); 
-            allowed_internal_formats.push_back(GL_R16UI); 	
-            allowed_internal_formats.push_back(GL_R8UI); 	
-            allowed_internal_formats.push_back(GL_RGBA32I); 
-            allowed_internal_formats.push_back(GL_RGBA16I); 
-            allowed_internal_formats.push_back(GL_RGBA8I); 	
-            allowed_internal_formats.push_back(GL_RG32I); 	
-            allowed_internal_formats.push_back(GL_RG16I); 	
-            allowed_internal_formats.push_back(GL_RG8I); 	
-            allowed_internal_formats.push_back(GL_R32I); 	
-            allowed_internal_formats.push_back(GL_R16I); 	
-            allowed_internal_formats.push_back(GL_R8I); 	
+        //     std::vector<GLint> allowed_internal_formats;
+        //     allowed_internal_formats.push_back(GL_RGBA32F);
+        //     allowed_internal_formats.push_back(GL_RGBA16F);
+        //     allowed_internal_formats.push_back(GL_RG32F);
+        //     allowed_internal_formats.push_back(GL_RG16F);
+        //     // allowed_internal_formats.push_back(GL_R11F_G11F_B10F); no channel 3 allowed because it will get translated to 4 channels either way
+        //     allowed_internal_formats.push_back(GL_R32F);
+        //     allowed_internal_formats.push_back(GL_R16F);
+        //     // allowed_internal_formats.push_back(GL_RGBA16); //ambigous, I prefer the version with RGBA16UI or RGBA16I
+        //     // allowed_internal_formats.push_back(GL_RGB10_A2);
+        //     // allowed_internal_formats.push_back(GL_RGBA8);
+        //     // allowed_internal_formats.push_back(GL_RG16);
+        //     // allowed_internal_formats.push_back(GL_RG8);
+        //     // allowed_internal_formats.push_back(GL_R16);
+        //     // allowed_internal_formats.push_back(GL_R8);
+        //     allowed_internal_formats.push_back(GL_RGBA16_SNORM);
+        //     allowed_internal_formats.push_back(GL_RGBA8_SNORM);
+        //     allowed_internal_formats.push_back(GL_RG16_SNORM);
+        //     allowed_internal_formats.push_back(GL_RG8_SNORM);
+        //     allowed_internal_formats.push_back(GL_R16_SNORM);
+        //     allowed_internal_formats.push_back(GL_RGBA32UI);	
+        //     allowed_internal_formats.push_back(GL_RGBA16UI);	
+        //     allowed_internal_formats.push_back(GL_RGB10_A2UI); 	
+        //     allowed_internal_formats.push_back(GL_RGBA8UI); 	
+        //     allowed_internal_formats.push_back(GL_RG32UI); 	
+        //     allowed_internal_formats.push_back(GL_RG16UI); 	
+        //     allowed_internal_formats.push_back(GL_RG8UI); 	
+        //     allowed_internal_formats.push_back(GL_R32UI); 
+        //     allowed_internal_formats.push_back(GL_R16UI); 	
+        //     allowed_internal_formats.push_back(GL_R8UI); 	
+        //     allowed_internal_formats.push_back(GL_RGBA32I); 
+        //     allowed_internal_formats.push_back(GL_RGBA16I); 
+        //     allowed_internal_formats.push_back(GL_RGBA8I); 	
+        //     allowed_internal_formats.push_back(GL_RG32I); 	
+        //     allowed_internal_formats.push_back(GL_RG16I); 	
+        //     allowed_internal_formats.push_back(GL_RG8I); 	
+        //     allowed_internal_formats.push_back(GL_R32I); 	
+        //     allowed_internal_formats.push_back(GL_R16I); 	
+        //     allowed_internal_formats.push_back(GL_R8I); 	
 
-            //check that we are a valid one
-            for (size_t i = 0; i < allowed_internal_formats.size(); i++) {
-                if(internal_format==allowed_internal_formats[i]){
-                    return; //This is a valid format
-                }
-            }
+        //     //check that we are a valid one
+        //     for (size_t i = 0; i < allowed_internal_formats.size(); i++) {
+        //         if(internal_format==allowed_internal_formats[i]){
+        //             return; //This is a valid format
+        //         }
+        //     }
 
-            //we went through all of them and didn't find a valid one
-            LOG(FATAL) << named("Texture is not valid for ImageLoadStore operations. Check the valid list of internal formats at https://www.khronos.org/opengl/wiki/Image_Load_Store");
+        //     //we went through all of them and didn't find a valid one
+        //     LOG(FATAL) << named("Texture is not valid for ImageLoadStore operations. Check the valid list of internal formats at https://www.khronos.org/opengl/wiki/Image_Load_Store");
 
 
-        }
+        // }
 
 
         inline std::string file_to_string (const std::string &filename){

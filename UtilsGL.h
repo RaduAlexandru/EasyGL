@@ -210,8 +210,8 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R8; format=GL_RED;  break;
            // case 3: internal_format=GL_RGB8; format=GL_BGR;break;
-           case 4: 
-                   internal_format=GL_RGBA8; 
+           case 4:
+                   internal_format=GL_RGBA8;
                    if(flip_red_blue){
                        format=GL_BGRA;
                    }else{
@@ -225,8 +225,8 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R8UI; format=GL_RED_INTEGER;  break;
            // case 3: internal_format=GL_RGB8UI; format=GL_BGR_INTEGER;break;
-           case 4: 
-                    internal_format=GL_RGBA8UI; 
+           case 4:
+                    internal_format=GL_RGBA8UI;
                     if(flip_red_blue){
                         format=GL_BGRA_INTEGER;
                     }else{
@@ -241,8 +241,8 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R32F; format=GL_RED;  break;
            // case 3: internal_format=GL_RGB32F; format=GL_BGR; break;
-           case 4: 
-                    internal_format=GL_RGBA32F;  
+           case 4:
+                    internal_format=GL_RGBA32F;
                     if(flip_red_blue){
                         format=GL_BGRA;
                     }else{
@@ -281,15 +281,47 @@ inline int round_up_to_nearest_multiple(const int number, const int divisor){
 inline bool is_internal_format_valid(const GLenum internal_format){
 
     //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
-    //not all of them are here but rather the ones that are specific about the format so we don't consider RGBA8 a valid one and prefer RGBA8UI or RGBA8I, also we dont use the ones with 3 channels because of ineficiency
+    //not all of them are here but rather the ones that are specific about the format so we don't consider RGBA a valid one and prefer, RGBA8 RGBA8UI or RGBA8I,d
     std::vector<GLenum> allowed_internal_formats;
 
-    allowed_internal_formats.push_back(GL_R16F); 
+
+    allowed_internal_formats.push_back(GL_R8);
+    allowed_internal_formats.push_back(GL_R8_SNORM);
+    allowed_internal_formats.push_back(GL_R16);
+    allowed_internal_formats.push_back(GL_R16_SNORM);
+    allowed_internal_formats.push_back(GL_RG8);
+    allowed_internal_formats.push_back(GL_RG8_SNORM);
+    allowed_internal_formats.push_back(GL_RG16);
+    allowed_internal_formats.push_back(GL_RG16_SNORM);
+    allowed_internal_formats.push_back(GL_R3_G3_B2);
+    allowed_internal_formats.push_back(GL_RGB4);
+    allowed_internal_formats.push_back(GL_RGB5);
+    allowed_internal_formats.push_back(GL_RGB8);
+    allowed_internal_formats.push_back(GL_RGB8_SNORM);
+    allowed_internal_formats.push_back(GL_RGB10);
+    allowed_internal_formats.push_back(GL_RGB12);
+    allowed_internal_formats.push_back(GL_RGB16_SNORM);
+    allowed_internal_formats.push_back(GL_RGBA2);
+    allowed_internal_formats.push_back(GL_RGBA4);
+    allowed_internal_formats.push_back(GL_RGB5_A1);
+    allowed_internal_formats.push_back(GL_RGBA8);
+    allowed_internal_formats.push_back(GL_RGBA8_SNORM);
+    allowed_internal_formats.push_back(GL_RGB10_A2);
+    allowed_internal_formats.push_back(GL_RGB10_A2UI);
+    allowed_internal_formats.push_back(GL_RGBA12);
+    allowed_internal_formats.push_back(GL_RGBA16);
+    allowed_internal_formats.push_back(GL_SRGB8);
+    allowed_internal_formats.push_back(GL_SRGB8_ALPHA8);
+    allowed_internal_formats.push_back(GL_R16F);
     allowed_internal_formats.push_back(GL_RG16F);
+    allowed_internal_formats.push_back(GL_RGB16F);
     allowed_internal_formats.push_back(GL_RGBA16F);
     allowed_internal_formats.push_back(GL_R32F);
     allowed_internal_formats.push_back(GL_RG32F);
+    allowed_internal_formats.push_back(GL_RGB32F);
     allowed_internal_formats.push_back(GL_RGBA32F);
+    allowed_internal_formats.push_back(GL_R11F_G11F_B10F);
+    allowed_internal_formats.push_back(GL_RGB9_E5);
     allowed_internal_formats.push_back(GL_R8I);
     allowed_internal_formats.push_back(GL_R8UI);
     allowed_internal_formats.push_back(GL_R16I);
@@ -302,6 +334,12 @@ inline bool is_internal_format_valid(const GLenum internal_format){
     allowed_internal_formats.push_back(GL_RG16UI);
     allowed_internal_formats.push_back(GL_RG32I);
     allowed_internal_formats.push_back(GL_RG32UI);
+    allowed_internal_formats.push_back(GL_RGB8I);
+    allowed_internal_formats.push_back(GL_RGB8UI);
+    allowed_internal_formats.push_back(GL_RGB16I);
+    allowed_internal_formats.push_back(GL_RGB16UI);
+    allowed_internal_formats.push_back(GL_RGB32I);
+    allowed_internal_formats.push_back(GL_RGB32UI);
     allowed_internal_formats.push_back(GL_RGBA8I);
     allowed_internal_formats.push_back(GL_RGBA8UI);
     allowed_internal_formats.push_back(GL_RGBA16I);
@@ -380,6 +418,61 @@ inline bool is_type_valid(const GLenum type){
     //check that we are a valid one
     for (size_t i = 0; i < allowed_types.size(); i++) {
         if(type==allowed_types[i]){
+            return true; //This is a valid format
+        }
+    }
+
+    return false;
+}
+
+inline bool is_internal_format_valid_for_image_bind(const GLenum internal_format){
+    //List is here https://www.khronos.org/opengl/wiki/Image_Load_Store
+
+    std::vector<GLenum> allowed_internal_formats;
+
+    allowed_internal_formats.push_back(GL_RGBA32F);
+    allowed_internal_formats.push_back(GL_RGBA16F);
+    allowed_internal_formats.push_back(GL_RG32F);
+    allowed_internal_formats.push_back(GL_RG16F);
+    allowed_internal_formats.push_back(GL_R11F_G11F_B10F);
+    allowed_internal_formats.push_back(GL_R32F);
+    allowed_internal_formats.push_back(GL_R16F);
+    allowed_internal_formats.push_back(GL_RGBA16);
+    allowed_internal_formats.push_back(GL_RGB10_A2);
+    allowed_internal_formats.push_back(GL_RGBA8);
+    allowed_internal_formats.push_back(GL_RG16);
+    allowed_internal_formats.push_back(GL_RG8);
+    allowed_internal_formats.push_back(GL_R16);
+    allowed_internal_formats.push_back(GL_R8);
+    allowed_internal_formats.push_back(GL_RGBA16_SNORM);
+    allowed_internal_formats.push_back(GL_RGBA8_SNORM);
+    allowed_internal_formats.push_back(GL_RG16_SNORM);
+    allowed_internal_formats.push_back(GL_RG8_SNORM);
+    allowed_internal_formats.push_back(GL_R16_SNORM);
+    allowed_internal_formats.push_back(GL_RGBA32UI);
+    allowed_internal_formats.push_back(GL_RGBA16UI);
+    allowed_internal_formats.push_back(GL_RGB10_A2UI);
+    allowed_internal_formats.push_back(GL_RGBA8UI);
+    allowed_internal_formats.push_back(GL_RG32UI);
+    allowed_internal_formats.push_back(GL_RG16UI);
+    allowed_internal_formats.push_back(GL_RG8UI);
+    allowed_internal_formats.push_back(GL_R32UI);
+    allowed_internal_formats.push_back(GL_R16UI);
+    allowed_internal_formats.push_back(GL_R8UI);
+    allowed_internal_formats.push_back(GL_RGBA32I);
+    allowed_internal_formats.push_back(GL_RGBA16I);
+    allowed_internal_formats.push_back(GL_RGBA8I);
+    allowed_internal_formats.push_back(GL_RG32I);
+    allowed_internal_formats.push_back(GL_RG16I);
+    allowed_internal_formats.push_back(GL_RG8I);
+    allowed_internal_formats.push_back(GL_R32I);
+    allowed_internal_formats.push_back(GL_R16I);
+    allowed_internal_formats.push_back(GL_R8I);
+
+
+    //check that we are a valid one
+    for (size_t i = 0; i < allowed_internal_formats.size(); i++) {
+        if(internal_format==allowed_internal_formats[i]){
             return true; //This is a valid format
         }
     }
