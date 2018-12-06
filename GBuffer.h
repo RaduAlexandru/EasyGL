@@ -64,9 +64,9 @@ namespace gl{
         void add_depth(const std::string name){
             m_depth_tex.set_name(name);
             if(m_width!=0 && m_height!=0){
-                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height);
+                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height);
             }else{
-                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
+                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
             }
 
 
@@ -77,6 +77,15 @@ namespace gl{
             // restore default FBO
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+        }
+
+        void sanity_check(){
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+            GLuint status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+            if (status != GL_FRAMEBUFFER_COMPLETE){
+                LOG(FATAL) << named("Framebufer is not complete.");
+                return;
+            }
         }
 
         void set_size(const int w, const int h){

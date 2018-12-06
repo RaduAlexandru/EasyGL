@@ -281,6 +281,7 @@ inline int round_up_to_nearest_multiple(const int number, const int divisor){
 inline bool is_internal_format_valid(const GLenum internal_format){
 
     //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+    //not all of them are here but rather the ones that are specific about the format so we don't consider RGBA8 a valid one and prefer RGBA8UI or RGBA8I, also we dont use the ones with 3 channels because of ineficiency
     std::vector<GLenum> allowed_internal_formats;
 
     allowed_internal_formats.push_back(GL_R16F); 
