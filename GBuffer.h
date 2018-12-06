@@ -97,6 +97,20 @@ namespace gl{
 
         }
 
+         void bind_for_draw(){
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+        }
+        
+        void bind_for_read(){
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo_id);
+        }
+
+        void clear(){
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+            glClearColor(0.0, 0.0, 0.0, 0.0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        }
+
 
         int get_fbo_id() const{
             return m_fbo_id;

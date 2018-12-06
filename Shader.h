@@ -305,11 +305,12 @@ namespace gl{
 
             // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gbuffer.get_fbo_id());
-            glClearColor(0.0, 0.0, 0.0, 0.0);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            // glClearColor(0.0, 0.0, 0.0, 0.0);
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }
+
 
         int get_prog_id() const{
             return m_prog_id;

@@ -362,6 +362,7 @@ inline bool is_type_valid(const GLenum type){
     allowed_types.push_back(GL_UNSIGNED_INT);
     allowed_types.push_back(GL_INT);
     allowed_types.push_back(GL_FLOAT);
+    allowed_types.push_back(GL_HALF_FLOAT);
     allowed_types.push_back(GL_UNSIGNED_BYTE_3_3_2);
     allowed_types.push_back(GL_UNSIGNED_BYTE_2_3_3_REV);
     allowed_types.push_back(GL_UNSIGNED_SHORT_5_6_5);
