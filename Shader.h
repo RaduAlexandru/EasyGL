@@ -240,6 +240,11 @@ namespace gl{
             glUniform3fv(uniform_location, 1, vec.data());
         }
 
+        void uniform_v4_float(const Eigen::Vector4f vec, const std::string uniform_name){
+            GLint uniform_location=get_uniform_location(uniform_name);
+            glUniform4fv(uniform_location, 1, vec.data());
+        }
+
         //sends an array of vec3 to the shader. Inside the shader we declare it as vec3 array[SIZE] where size must correspond to the one being sent 
         void uniform_array_v3_float(const Eigen::MatrixXf mat, const std::string uniform_name){
             CHECK(mat.cols()==3) << named("The matrix should have 3 columns because we expect a matrix with N rows and 3 columns for the vec3 array.");
