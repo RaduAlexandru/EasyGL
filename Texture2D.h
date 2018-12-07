@@ -171,6 +171,9 @@ namespace gl{
             CHECK(m_format!=-1) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_type!=-1) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
 
+            m_width=w;
+            m_height=h;
+
 
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, m_internal_format, w, h, 0, m_format, m_type, 0); //allocate storage texture
@@ -313,6 +316,7 @@ namespace gl{
 
         int width() const{ LOG_IF(WARNING,m_width==0) << named("Width of the texture is 0"); return m_width; };
         int height() const{ LOG_IF(WARNING,m_height==0) << named("Height of the texture is 0");return m_height; };
+
 
     private:
         int m_width;
