@@ -218,6 +218,18 @@ namespace gl{
             m_tex_storage_inmutable=true;
         }
 
+        void allocate_or_resize(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
+            CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+            CHECK(is_format_valid(format)) << named("Format not valid");
+            CHECK(is_type_valid(type)) << named("Type not valid");
+
+            if(!m_tex_storage_initialized){
+                allocate_tex_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it 
+            }else if(m_tex_storage_initialized && (m_width!=width || m_height!=height ) ){
+                resize( width, height ); // initialized but the texture changed size and we have to resize the buffer
+            }
+        } 
+
         // //uploads data from cpu to pbo (on gpu) will take some cpu time to perform the memcpy
         // void upload_to_pbo(const void* data_ptr, int size_bytes){
         //     // bind the PBO
@@ -295,6 +307,15 @@ namespace gl{
 
         //     return cv_mat;
         // }
+
+        void generate_mipmap(const int max_lvl){
+            glActiveTexture(GL_TEXTURE0);
+            bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_MAX_LEVEL, max_lvl);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
 
 
         void bind() const{
