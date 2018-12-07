@@ -278,6 +278,15 @@ inline int round_up_to_nearest_multiple(const int number, const int divisor){
  return number - number % divisor + divisor * !!(number % divisor);
 }
 
+//calculates for a certain full sized image what would be size at a certain mip map level
+inline Eigen::Vector2i calculate_mipmap_size(const Eigen::Vector2i full_size, const int level){
+    int new_w=std::max<int>(1, floor(full_size.x() / pow(2,level) )  );
+    int new_h=std::max<int>(1, floor(full_size.y() / pow(2,level) )  );
+    Eigen::Vector2i new_size;
+    new_size<< new_w, new_h;
+    return new_size;
+}
+
 inline bool is_internal_format_valid(const GLenum internal_format){
 
     //taken from https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
