@@ -359,8 +359,8 @@ namespace gl{
             return m_internal_format;
         }
 
-        int width() const{ LOG_IF(WARNING,m_width==0) << named("Width of the texture is 0"); return m_width; };
-        int height() const{ LOG_IF(WARNING,m_height==0) << named("Height of the texture is 0");return m_height; };
+        int width() const{ return m_width; };
+        int height() const{ return m_height; };
 
 
     private:
