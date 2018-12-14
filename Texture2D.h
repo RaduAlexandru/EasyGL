@@ -308,6 +308,30 @@ namespace gl{
         //     return cv_mat;
         // }
 
+
+        //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
+        cv::Mat download_to_cv_mat(const bool denormalize=false){
+            //TODO now that the class stores internally the format type and eveything, we should need to use this ffunction that translates from internal_format to format and type
+            CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
+            CHECK(m_internal_format!=-1) << named("Internal format was not initialized");
+            CHECK(m_format!=-1) << named("Format was not initialized");
+            CHECK(m_type!=-1) << named("Type was not initialized");
+
+            bind();
+
+            //create the cv_mat and
+            int cv_type=gl_internal_format2cv_type(m_internal_format);
+            cv::Mat cv_mat(m_height, m_width, cv_type);
+
+            //download from gpu into the cv memory
+            glGetTexImage(GL_TEXTURE_2D,0, m_format, m_type, cv_mat.data);
+            if(denormalize){
+                cv_mat*=255; //go from range [0,1] to [0,255];
+            }
+
+            return cv_mat;
+        }
+
         void generate_mipmap(const int max_lvl){
             glActiveTexture(GL_TEXTURE0);
             bind();

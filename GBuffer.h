@@ -106,7 +106,11 @@ namespace gl{
 
         }
 
-         void bind_for_draw(){
+        void bind(){
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+        }
+
+        void bind_for_draw(){
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
         }
         
