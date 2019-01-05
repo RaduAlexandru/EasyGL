@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 
 #include <iostream>
+#include <vector>
 
 namespace gl{
     class Buf{
