@@ -179,19 +179,19 @@ inline int gl_internal_format2cv_type(const GLint internal_format){
     switch ( internal_format ) {
         //the ones with uchar (They don't work for some reason... I think it has to be Just G_RGB and not GL_RGB8UI)
        case GL_R8UI: cv_type=CV_8UC1;  break;
-       // case GL_RGB8UI: cv_type=CV_8UC3; break;
+       case GL_RGB8UI: cv_type=CV_8UC3; break;
        case GL_RGBA8UI: cv_type=CV_8UC4; break;
 
        case GL_R8: cv_type=CV_8UC1;  break;
-       // case GL_RGB8: cv_type=CV_8UC3; break;
+       case GL_RGB8: cv_type=CV_8UC3; break;
        case GL_RGBA8: cv_type=CV_8UC4; break;
 
        //the ones with float
        case GL_R32F: cv_type=CV_32FC1;  break;
-       // case GL_RGB32F: cv_type=CV_32FC3;  break;
+       case GL_RGB32F: cv_type=CV_32FC3;  break;
        case GL_RGBA32F: cv_type=CV_32FC4;  break;
        //print the internal forma tin hex because the glad.h header stores them like that so it'seasy to look up
-       default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8UI and 32F and 1 and 4 channels"; break;
+       default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 3 and 4 channels"; break;
     }
 
     return cv_type;
@@ -209,7 +209,14 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         type=GL_UNSIGNED_BYTE;
         switch ( channels ) {
            case 1: internal_format=GL_R8; format=GL_RED;  break;
-           // case 3: internal_format=GL_RGB8; format=GL_BGR;break;
+           case 3:
+                internal_format=GL_RGB8;
+                   if(flip_red_blue){
+                       format=GL_BGR;
+                   }else{
+                       format=GL_RGB;
+                   }
+                   break; 
            case 4:
                    internal_format=GL_RGBA8;
                    if(flip_red_blue){
@@ -218,13 +225,20 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                        format=GL_RGBA;
                    }
                    break;
-           default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
+           default:  LOG(FATAL) << "Nr of channels not supported. We only support 1, 3 and 4. Images with 2 channels are not implemented"; break;
         }
     }else if(depth==CV_8U && !store_as_normalized_vals){
         type=GL_UNSIGNED_BYTE;
         switch ( channels ) {
            case 1: internal_format=GL_R8UI; format=GL_RED_INTEGER;  break;
-           // case 3: internal_format=GL_RGB8UI; format=GL_BGR_INTEGER;break;
+           case 3: 
+                    internal_format=GL_RGB8UI;
+                    if(flip_red_blue){
+                        format=GL_BGR_INTEGER;
+                    }else{
+                        format=GL_RGB_INTEGER;
+                    }
+                    break;
            case 4:
                     internal_format=GL_RGBA8UI;
                     if(flip_red_blue){
@@ -233,14 +247,21 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                         format=GL_RGBA_INTEGER;
                     }
                     break;
-           default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
+           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 3 and 4. Images with 2 channels are not implemented"; break; 
         }
     }
     else if(depth==CV_32F){
         type=GL_FLOAT;
         switch ( channels ) {
            case 1: internal_format=GL_R32F; format=GL_RED;  break;
-           // case 3: internal_format=GL_RGB32F; format=GL_BGR; break;
+           case 3:
+                    internal_format=GL_RGB32F;
+                    if(flip_red_blue){
+                        format=GL_BGR;
+                    }else{
+                        format=GL_RGB;
+                    }
+                    break; 
            case 4:
                     internal_format=GL_RGBA32F;
                     if(flip_red_blue){
@@ -249,7 +270,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                         format=GL_RGBA;
                     }
                     break;
-           default:  LOG(FATAL) << "Nr of channels not supported. We only support 1 and 4. For efficiency reasons, imgs with 3 channels are not supported and 2 channels are not implemented"; break;
+           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 3 and 4. Images with 2 channels are not implemented"; break;  
         }
     }else{
         LOG(FATAL) << "CV mat is only supported for types of unsigned byte and float. Check the depth of your cv mat";
