@@ -14,8 +14,6 @@
 #include "opencv2/opencv.hpp"
 
 //loguru
-#define LOGURU_NO_DATE_TIME 1
-#define LOGURU_NO_UPTIME 1
 #define LOGURU_REPLACE_GLOG 1
 #include <loguru.hpp>
 
