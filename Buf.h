@@ -4,16 +4,19 @@
 #include <iostream>
 #include <vector>
 
+//use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
+#define EGL_INVALID 2147483647  
+
 namespace gl{
     class Buf{
     public:
         Buf():
-            m_buf_id(-1),
+            m_buf_id(EGL_INVALID),
             m_buf_storage_initialized(false),
-            m_buf_is_inmutable(false),
-            m_target(-1),
-            m_usage_hints(-1),
-            m_size_bytes(-1),
+            m_buf_is_inmutable(EGL_INVALID),
+            m_target(EGL_INVALID),
+            m_usage_hints(EGL_INVALID),
+            m_size_bytes(EGL_INVALID),
             m_is_cpu_dirty(false),
             m_is_gpu_dirty(false){
 
@@ -46,10 +49,10 @@ namespace gl{
             // sanity_check();
 
             //orphaning required to use the same usage hints it had before https://www.khronos.org/opengl/wiki/Buffer_Object_Streaming
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
-            if(m_usage_hints==-1) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
-            if(m_size_bytes==-1) LOG(FATAL) << named("Size have not been assigned. It will get assign by using upload_data.");
+            if(m_usage_hints==EGL_INVALID) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
+            if(m_size_bytes==EGL_INVALID) LOG(FATAL) << named("Size have not been assigned. It will get assign by using upload_data.");
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, m_size_bytes, NULL, m_usage_hints);
@@ -71,7 +74,7 @@ namespace gl{
         //same as above but without specifying the target as we use the one that is already set
         void upload_data(const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(size_bytes==0) return; 
 
             glBindBuffer(m_target, m_buf_id);
@@ -86,8 +89,8 @@ namespace gl{
         //same as above but without specifying the target nor the usage hints
         void upload_data(const GLsizei size_bytes, const void* data_ptr ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
-            if(m_usage_hints==-1) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_usage_hints==EGL_INVALID) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
             if(size_bytes==0) return; 
 
             glBindBuffer(m_target, m_buf_id);
@@ -107,15 +110,15 @@ namespace gl{
         //same without target
         void upload_sub_data(const GLintptr offset, const GLsizei size_bytes, const void* data_ptr){
             if(!m_buf_storage_initialized) LOG(FATAL) << named("Buffer has no storage initialized. Use upload_data, or allocate_inmutable.");
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
 
             glBindBuffer(m_target, m_buf_id);
             glBufferSubData(m_target, offset, size_bytes, data_ptr);
         }
 
         void bind_for_modify(const GLint uniform_location){
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
-            if(uniform_location==-1)  LOG(WARNING) << named("Uniform location does not exist");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(uniform_location==EGL_INVALID)  LOG(WARNING) << named("Uniform location does not exist");
 
             glBindBufferBase(m_target, uniform_location, m_buf_id);
         }
@@ -137,7 +140,7 @@ namespace gl{
 
         //allocate inmutable texture storage (ASSUMES TARGET WAS SET BEFORE )
         void allocate_inmutable(const GLsizei size_bytes, const void* data_ptr, const GLbitfield flags){
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use set_target, upload_data or allocate_inmutable first");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use set_target, upload_data or allocate_inmutable first");
 
             glBindBuffer(m_target, m_buf_id);
             glBufferStorage(m_target, size_bytes, data_ptr, flags);
@@ -157,7 +160,7 @@ namespace gl{
 
 
         void bind() const{
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             glBindBuffer( m_target, m_buf_id );
         }
 
@@ -202,8 +205,8 @@ namespace gl{
 
         //download from gpu to cpu
         void download(void* destination_data_ptr, const int bytes_to_copy){
-            if(m_target==-1)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
-            if(m_size_bytes==-1) LOG(FATAL) << named("Size have not been assigned. It will get assign by using upload_data.");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(m_size_bytes==EGL_INVALID) LOG(FATAL) << named("Size have not been assigned. It will get assign by using upload_data.");
 
             glBindBuffer(m_target, m_buf_id);
             void* ptr = (void*)glMapBuffer(m_target, GL_READ_ONLY);

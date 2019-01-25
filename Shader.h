@@ -17,11 +17,14 @@
 
 #include <Eigen/Core>
 
+//use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
+#define EGL_INVALID 2147483647 
+
 namespace gl{
     class Shader{
     public:
         Shader():
-            m_prog_id(-1),
+            m_prog_id(EGL_INVALID),
             m_is_compiled(false),
             m_nr_texture_units_used(0),
             m_nr_image_units_used(0),

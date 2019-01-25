@@ -3,13 +3,18 @@
 
 #include <Texture2D.h>
 
+
 #define MAX_TEXTURES 8 
+
+
+//use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
+#define EGL_INVALID 2147483647  
 
 namespace gl{
     class GBuffer{
     public:
         GBuffer():
-            m_fbo_id(-1),
+            m_fbo_id(EGL_INVALID),
             m_width(0),
             m_height(0),
             m_depth_tex("depth_gbuffer") // add a dummy name just to have in case we throw any error

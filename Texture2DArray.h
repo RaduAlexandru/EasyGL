@@ -3,19 +3,22 @@
 
 #include <iostream>
 
+//use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
+#define EGL_INVALID 2147483647 
+
 namespace gl{
     class Texture2DArray{
     public:
         Texture2DArray():
-            m_tex_id(-1),
+            m_tex_id(EGL_INVALID),
             m_tex_storage_initialized(false),
-            m_internal_format(-1),
+            m_internal_format(EGL_INVALID),
             m_nr_pbos(1),
             m_cur_pbo_idx(0){
             glGenTextures(1,&m_tex_id);
 
             //create some pbos
-            m_pbo_ids.resize(m_nr_pbos,-1);
+            m_pbo_ids.resize(m_nr_pbos,EGL_INVALID);
             m_pbo_storages_initialized.resize(m_nr_pbos,false);
             glGenBuffers(m_nr_pbos, m_pbo_ids.data());
 
@@ -202,7 +205,7 @@ namespace gl{
         }
 
         GLint get_internal_format() const{
-            CHECK(m_internal_format!=-1) << named("The texture has not been initialzied and doesn't yet have a format");
+            CHECK(m_internal_format!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }
 

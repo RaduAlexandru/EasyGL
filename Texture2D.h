@@ -7,24 +7,25 @@
 
 #include "UtilsGL.h"
 
-// #include "stereo_cost_vol_dense/Profiler.h"
+//use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
+#define EGL_INVALID 2147483647 
 
 namespace gl{
     class Texture2D{
     public:
         Texture2D():
-            m_tex_id(-1),
+            m_tex_id(EGL_INVALID),
             m_tex_storage_initialized(false),
             m_tex_storage_inmutable(false),
-            m_internal_format(-1),
-            m_format(-1),
-            m_type(-1),
+            m_internal_format(EGL_INVALID),
+            m_format(EGL_INVALID),
+            m_type(EGL_INVALID),
             m_nr_pbos(2),
             m_cur_pbo_idx(0){
             glGenTextures(1,&m_tex_id);
 
             //create some pbos
-            m_pbo_ids.resize(m_nr_pbos,-1);
+            m_pbo_ids.resize(m_nr_pbos,EGL_INVALID);
             m_pbo_storages_initialized.resize(m_nr_pbos,false);
             glGenBuffers(m_nr_pbos, m_pbo_ids.data());
 
@@ -167,9 +168,9 @@ namespace gl{
         // }
 
         void resize(const int w, const int h){
-            CHECK(m_internal_format!=-1) << named("Cannot resize without knowing the internal format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
-            CHECK(m_format!=-1) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
-            CHECK(m_type!=-1) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
+            CHECK(m_internal_format!=EGL_INVALID) << named("Cannot resize without knowing the internal format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
+            CHECK(m_format!=EGL_INVALID) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
+            CHECK(m_type!=EGL_INVALID) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
 
             m_width=w;
             m_height=h;
@@ -286,7 +287,7 @@ namespace gl{
         // cv::Mat download_to_cv_mat(const bool denormalize=false){
         //     //TODO now that the class stores internally the format type and eveything, we should need to use this ffunction that translates from internal_format to format and type
         //     CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
-        //     CHECK(m_internal_format!=-1) << named("Internal format was not initialized");
+        //     CHECK(m_internal_format!=EGL_INVALID) << named("Internal format was not initialized");
 
         //     bind();
         //     //get the width and height of the gl_texture
@@ -313,9 +314,9 @@ namespace gl{
         cv::Mat download_to_cv_mat(const bool denormalize=false){
             //TODO now that the class stores internally the format type and eveything, we should need to use this ffunction that translates from internal_format to format and type
             CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
-            CHECK(m_internal_format!=-1) << named("Internal format was not initialized");
-            CHECK(m_format!=-1) << named("Format was not initialized");
-            CHECK(m_type!=-1) << named("Type was not initialized");
+            CHECK(m_internal_format!=EGL_INVALID) << named("Internal format was not initialized");
+            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
 
             bind();
 
@@ -355,7 +356,7 @@ namespace gl{
         }
 
         GLint get_internal_format() const{
-            CHECK(m_internal_format!=-1) << named("The texture has not been initialzied and doesn't yet have a format");
+            CHECK(m_internal_format!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }
 
