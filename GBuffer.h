@@ -14,9 +14,9 @@ namespace gl{
     class GBuffer{
     public:
         GBuffer():
-            m_fbo_id(EGL_INVALID),
             m_width(0),
             m_height(0),
+            m_fbo_id(EGL_INVALID),
             m_depth_tex("depth_gbuffer") // add a dummy name just to have in case we throw any error
             {
             glGenFramebuffers(1,&m_fbo_id);
@@ -46,7 +46,7 @@ namespace gl{
 
 
         void add_texture(const std::string name, GLint internal_format, GLenum format, GLenum type){
-            LOG_IF(FATAL, m_textures.size()>= m_max_color_attachments-1) << named( name + " could not be added. Added to many textures. This will cause the vector to be dinamically resized and therefore move and destruct some of the textures. Please increase the MAX_TEXTURES #define inside the GBuffer class");
+            LOG_IF(FATAL, (int)m_textures.size()>= m_max_color_attachments-1  ) << named( name + " could not be added. Added to many textures. This will cause the vector to be dinamically resized and therefore move and destruct some of the textures. Please increase the MAX_TEXTURES #define inside the GBuffer class");
 
             m_textures.emplace_back(name); 
 

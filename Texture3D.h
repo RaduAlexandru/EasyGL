@@ -184,10 +184,10 @@ namespace gl{
         GLuint m_tex_id;
         // GLuint m_pbo_id;
         bool m_tex_storage_initialized;
-        int m_nr_pbos;
         // bool m_pbo_storage_initialized;
         GLint m_internal_format;
 
+        int m_nr_pbos;
         std::vector<GLuint> m_pbo_ids;
         std::vector<bool> m_pbo_storages_initialized;
         int m_cur_pbo_idx; //index into the pbo that we will use for uploading

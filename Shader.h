@@ -26,9 +26,9 @@ namespace gl{
         Shader():
             m_prog_id(EGL_INVALID),
             m_is_compiled(false),
+            m_is_compute_shader(false),
             m_nr_texture_units_used(0),
-            m_nr_image_units_used(0),
-            m_is_compute_shader(false)
+            m_nr_image_units_used(0)
             {
                 //when we bind a texture we use up a texture unit. We check that we don't go above this value
                 glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_max_allowed_texture_units);
@@ -286,7 +286,7 @@ namespace gl{
                 std::string frag_out_name=output2tex.first; 
                 int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
                 std::string tex_name=output2tex.second; 
-                int attachment_nr=gbuffer.attachment_nr(tex_name);
+                // int attachment_nr=gbuffer.attachment_nr(tex_name);
                 LOG_IF(WARNING, frag_out_location==-1) << named("Fragment output location for name " + frag_out_name + " is either not declared in the shader or not being used for outputting anything.");
                 // std::cout << frag_out_name << " with location " << frag_out_location <<  " will write into " << tex_name << " with attachment nr" << attachment_nr << '\n';
 
