@@ -141,9 +141,9 @@ namespace gl{
             */
 
             //from the cv format get the corresponding gl internal_format, format and type
-            GLint internal_format;
-            GLenum format;
-            GLenum type;
+            GLint internal_format=EGL_INVALID;
+            GLenum format=EGL_INVALID;
+            GLenum type=EGL_INVALID;
             cv_type2gl_formats(internal_format, format, type ,cv_mat.type(), flip_red_blue, store_as_normalized_vals);
 
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");

@@ -98,7 +98,7 @@ namespace gl{
             m_height=h;
 
             //resize the sizes of all texures that don't have the same size 
-            for(int i=0; i<m_textures.size(); i++){
+            for(size_t i=0; i<m_textures.size(); i++){
                 if(m_textures[i].width()!=w || m_textures[i].height()!=h ){
                     m_textures[i].resize(w,h);
                 }    
@@ -148,7 +148,7 @@ namespace gl{
         }
 
         Texture2D& tex_with_name(const std::string name){
-            for(int i=0; i<m_textures.size(); i++){
+            for(size_t i=0; i<m_textures.size(); i++){
                 if(m_textures[i].name()==name){
                     return m_textures[i];
                 }
