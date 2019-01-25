@@ -143,7 +143,8 @@ namespace gl{
                 //found 
                 return it->second;
             }else{
-                LOG(WARNING) << named("Texture with name: "+tex_name + " is not added to this gbuffer");
+                LOG(FATAL) << named("Texture with name: "+tex_name + " is not added to this gbuffer");
+                return 0; //HACK because this line will never occur because the previous line will kill it but we just put it to shut up the compiler warning
             }
         }
 
@@ -156,7 +157,8 @@ namespace gl{
             if(m_depth_tex.name()==name){
                 return m_depth_tex;
             }
-            LOG(WARNING) << named("No texture with name: " + name);
+            LOG(FATAL) << named("No texture with name: " + name);
+            return m_textures[0]; //HACK because this line will never occur because the previous line will kill it but we just put it to shut up the compiler warning
         }
 
     private:

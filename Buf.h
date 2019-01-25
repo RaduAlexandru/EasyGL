@@ -13,7 +13,7 @@ namespace gl{
         Buf():
             m_buf_id(EGL_INVALID),
             m_buf_storage_initialized(false),
-            m_buf_is_inmutable(EGL_INVALID),
+            m_buf_is_inmutable(false),
             m_target(EGL_INVALID),
             m_usage_hints(EGL_INVALID),
             m_size_bytes(EGL_INVALID),
@@ -59,7 +59,7 @@ namespace gl{
         }
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
-            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
+            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(size_bytes==0) return; 
 
             glBindBuffer(target, m_buf_id);
@@ -73,7 +73,7 @@ namespace gl{
 
         //same as above but without specifying the target as we use the one that is already set
         void upload_data(const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
-            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
+            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(size_bytes==0) return; 
 
@@ -88,7 +88,7 @@ namespace gl{
 
         //same as above but without specifying the target nor the usage hints
         void upload_data(const GLsizei size_bytes, const void* data_ptr ){
-            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so it cannot be orphaned. You should make it mutable using upload_data with NULL as data");
+            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(m_usage_hints==EGL_INVALID) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
             if(size_bytes==0) return; 
