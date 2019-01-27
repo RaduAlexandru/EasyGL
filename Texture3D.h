@@ -10,6 +10,9 @@ namespace gl{
     class Texture3D{
     public:
         Texture3D():
+            m_width(0),
+            m_height(0),
+            m_depth(0),
             m_tex_id(EGL_INVALID),
             m_tex_storage_initialized(false),
             m_internal_format(EGL_INVALID),

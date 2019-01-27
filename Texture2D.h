@@ -14,6 +14,8 @@ namespace gl{
     class Texture2D{
     public:
         Texture2D():
+            m_width(0),
+            m_height(0),
             m_tex_id(EGL_INVALID),
             m_tex_storage_initialized(false),
             m_tex_storage_inmutable(false),
