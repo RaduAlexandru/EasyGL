@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstring> //memcpy
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
 #define EGL_INVALID 2147483647  
