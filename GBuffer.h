@@ -69,9 +69,9 @@ namespace gl{
         void add_depth(const std::string name){
             m_depth_tex.set_name(name);
             if(m_width!=0 && m_height!=0){
-                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height);
+                m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //we do't really need the stencil but it's nice to hace a fully 4 byte aligned texture
             }else{
-                m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
+                m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
             }
 
 

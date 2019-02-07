@@ -375,8 +375,12 @@ inline bool is_internal_format_valid(const GLenum internal_format){
     allowed_internal_formats.push_back(GL_RGBA32I);
     allowed_internal_formats.push_back(GL_RGBA32UI);
     allowed_internal_formats.push_back(GL_DEPTH_COMPONENT32F);
+    allowed_internal_formats.push_back(GL_DEPTH_COMPONENT32);
     allowed_internal_formats.push_back(GL_DEPTH_COMPONENT24);
     allowed_internal_formats.push_back(GL_DEPTH_COMPONENT16);
+    allowed_internal_formats.push_back(GL_DEPTH24_STENCIL8);
+    allowed_internal_formats.push_back(GL_DEPTH32F_STENCIL8);
+    allowed_internal_formats.push_back(GL_STENCIL_INDEX8);
 
     //check that we are a valid one
     for (size_t i = 0; i < allowed_internal_formats.size(); i++) {
