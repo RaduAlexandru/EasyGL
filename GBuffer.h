@@ -84,6 +84,18 @@ namespace gl{
 
         }
 
+        void make_empty(const int width, const int height){
+            m_width=width;
+            m_height=height;
+            //empty framebuffer with no attachments using GL_ARB_framebuffer_no_attachments
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+            glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
+            glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
+            sanity_check();
+             // restore default FBO
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
         void sanity_check(){
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
             GLuint status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
@@ -111,15 +123,15 @@ namespace gl{
 
         }
 
-        void bind(){
+        void bind() const{
             glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
         }
 
-        void bind_for_draw(){
+        void bind_for_draw() const{
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
         }
         
-        void bind_for_read(){
+        void bind_for_read() const{
             glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo_id);
         }
 
@@ -136,6 +148,14 @@ namespace gl{
 
         int width() const{ LOG_IF(WARNING,m_width==0) << named("Width of the gbuffer is 0"); return m_width; };
         int height() const{ LOG_IF(WARNING,m_height==0) << named("Height of the gbuffer is 0");return m_height; };
+
+        bool is_initialized(){
+            if(m_width==0 || m_height==0){
+                return false;
+            }else{
+                return true;
+            }
+        }
 
         int attachment_nr(const std::string tex_name) const{
             auto it = m_texname2attachment.find(tex_name);
@@ -159,6 +179,18 @@ namespace gl{
             }
             LOG(FATAL) << named("No texture with name: " + name);
             return m_textures[0]; //HACK because this line will never occur because the previous line will kill it but we just put it to shut up the compiler warning
+        }
+
+        bool has_tex_with_name(const std::string name){
+            for(size_t i=0; i<m_textures.size(); i++){
+                if(m_textures[i].name()==name){
+                    return true;
+                }
+            }
+            if(m_depth_tex.name()==name){
+                return true;
+            }
+            return false;
         }
 
     private:
