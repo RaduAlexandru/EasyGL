@@ -41,6 +41,14 @@ namespace gl{
         Buf (Buf && other) = default; //move ctor
         Buf & operator=(Buf &&) = default; //move assignment
 
+        void set_name(const std::string name){
+            m_name=name;
+        }
+
+        std::string name() const{
+            return m_name;
+        }
+
 
         void set_target(const GLenum target){
             m_target=target; //can be either GL_ARRAY_BUFFER, GL_SHADER_STORAGE_BUFFER etc...
@@ -173,7 +181,7 @@ namespace gl{
             return m_buf_id;
         }
 
-        bool get_buf_storage_initialized (){
+        bool get_buf_storage_initialized () const{
             return m_buf_storage_initialized;
         }
 
