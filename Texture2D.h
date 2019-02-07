@@ -86,6 +86,11 @@ namespace gl{
             m_format=format;
             m_type=type;
 
+            //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
+            if( (format==GL_RGB || format==GL_BGR) && width%4!=0){
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            }
+
             // bind the texture and PBO
             GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]) );
@@ -123,6 +128,9 @@ namespace gl{
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
 
             m_cur_pbo_idx=(m_cur_pbo_idx+1)%m_nr_pbos;
+
+            //change back to unpack alignment of 4 which would be the default in case we changed it before
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
         }
 
 
@@ -320,6 +328,11 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
 
+            //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
+            if( (m_format==GL_RGB || m_format==GL_BGR) && m_width%4!=0){
+                glPixelStorei(GL_PACK_ALIGNMENT, 1);
+            }
+
             bind();
 
             //create the cv_mat and
@@ -331,6 +344,9 @@ namespace gl{
             if(denormalize){
                 cv_mat*=255; //go from range [0,1] to [0,255];
             }
+
+            //restore the packing alignment back to 4 as per default
+            glPixelStorei(GL_PACK_ALIGNMENT, 4);
 
             return cv_mat;
         }
