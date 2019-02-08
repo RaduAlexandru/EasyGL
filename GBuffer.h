@@ -139,6 +139,14 @@ namespace gl{
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
             glClearColor(0.0, 0.0, 0.0, 0.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        }
+
+        void set_constant(float val){
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+            glClearColor(val, val, val, val);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
 

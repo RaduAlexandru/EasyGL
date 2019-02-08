@@ -511,3 +511,5 @@ inline bool is_internal_format_valid_for_image_bind(const GLenum internal_format
 
     return false;
 }
+
+

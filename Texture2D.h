@@ -36,6 +36,11 @@ namespace gl{
             set_wrap_mode(GL_CLAMP_TO_BORDER);
             set_filter_mode(GL_LINEAR);
 
+            glGenFramebuffers(1,&m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
         Texture2D(std::string name):
@@ -324,7 +329,23 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
 
-            glClearTexImage(m_tex_id, 0, m_format, m_type, nullptr);
+            //it is for some reason super slow (5 to 6 ms)
+            // glClearTexImage(m_tex_id, 0, m_format, m_type, nullptr);
+
+            //a ton faster(less than 1 ms)
+            set_constant(0.0);
+
+        }
+
+        void set_constant(float val){
+            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+            
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glClearColor(val, val, val, val);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
         }
 
 
@@ -386,8 +407,19 @@ namespace gl{
             return m_internal_format;
         }
 
-        int width() const{ return m_width; };
-        int height() const{ return m_height; };
+
+        int width() const{ return m_width; }
+        int height() const{ return m_height; }
+        int channels() const{
+            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+            switch(m_format) {
+                case GL_RED : return 1; break;
+                case GL_RG : return 2; break;
+                case GL_RGB : return 3; break;
+                case GL_RGBA : return 4; break;
+                default : LOG(FATAL) << "We don't know how many channels does this format have.";
+            }
+        }
 
 
     private:
@@ -414,6 +446,7 @@ namespace gl{
         int m_cur_pbo_idx; //index into the pbo that we will use for uploading
 
 
+        GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
 
     };
 }
