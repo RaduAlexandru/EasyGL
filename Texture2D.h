@@ -319,6 +319,14 @@ namespace gl{
         //     return cv_mat;
         // }
 
+        //clears the texture to zero
+        void clear(){
+            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+
+            glClearTexImage(m_tex_id, 0, m_format, m_type, nullptr);
+        }
+
 
         //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
         cv::Mat download_to_cv_mat(const bool denormalize=false){
