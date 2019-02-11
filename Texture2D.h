@@ -33,7 +33,7 @@ namespace gl{
 
 
             //start with some sensible parameter initialziations
-            set_wrap_mode(GL_CLAMP_TO_BORDER);
+            set_wrap_mode(GL_CLAMP_TO_EDGE);
             set_filter_mode(GL_LINEAR);
 
             glGenFramebuffers(1,&m_fbo_for_clearing_id);
