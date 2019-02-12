@@ -348,6 +348,17 @@ namespace gl{
 
         }
 
+        void set_constant(float val, float val_alpha){
+            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+            
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glClearColor(val, val, val, val_alpha);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        }
+
 
         //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
         cv::Mat download_to_cv_mat(const bool denormalize=false){
