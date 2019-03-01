@@ -144,6 +144,8 @@ namespace gl{
         void upload_from_cv_mat(const cv::Mat& cv_mat, const bool flip_red_blue=true, const bool store_as_normalized_vals=true){
             //TODO needs to be rechecked as we now store as class member the internal format, format and type
 
+            CHECK(cv_mat.data) << "cv_mat is empty";
+
             m_width=cv_mat.cols;
             m_height=cv_mat.rows;
             //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
