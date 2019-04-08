@@ -185,6 +185,7 @@ namespace gl{
         // }
 
         void resize(const int w, const int h){
+            LOG_IF(FATAL, w==0 && h==0) << named("Resizing texture with 0 size width and height is invalid."); 
             CHECK(m_internal_format!=EGL_INVALID) << named("Cannot resize without knowing the internal format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_format!=EGL_INVALID) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_type!=EGL_INVALID) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");

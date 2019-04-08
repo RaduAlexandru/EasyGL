@@ -85,6 +85,8 @@ namespace gl{
         }
 
         void make_empty(const int width, const int height){
+            CHECK(width!=0 && height!=0) << named("Initializing Gbuffer with 0 width and height is invalid.");
+
             m_width=width;
             m_height=height;
             //empty framebuffer with no attachments using GL_ARB_framebuffer_no_attachments
@@ -106,6 +108,8 @@ namespace gl{
         }
 
         void set_size(const int w, const int h){
+            CHECK(w!=0 && h!=0) << named("Setting size of Gbuffer to 0 width and height is invalid.");
+
             m_width=w;
             m_height=h;
 
