@@ -17,7 +17,8 @@ namespace gl{
             m_width(0),
             m_height(0),
             m_fbo_id(EGL_INVALID),
-            m_depth_tex("depth_gbuffer") // add a dummy name just to have in case we throw any error
+            m_depth_tex("depth_gbuffer"), // add a dummy name just to have in case we throw any error
+            m_has_depth_tex(false)
             {
             glGenFramebuffers(1,&m_fbo_id);
 
@@ -67,6 +68,7 @@ namespace gl{
         }
 
         void add_depth(const std::string name){
+            m_has_depth_tex=true;
             m_depth_tex.set_name(name);
             if(m_width!=0 && m_height!=0){
                 m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //we do't really need the stencil but it's nice to hace a fully 4 byte aligned texture
@@ -121,7 +123,7 @@ namespace gl{
             }
         
             //resize also the depth
-            if( (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.get_tex_storage_initialized() ){ 
+            if(  m_has_depth_tex && (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.get_tex_storage_initialized() ){ 
                 m_depth_tex.resize(w,h);
             }
 
@@ -217,6 +219,7 @@ namespace gl{
         GLuint m_fbo_id;
         std::vector<gl::Texture2D> m_textures; //we don't use a vector beceuase as its size increases it might need to copy elements around and I dont want to implement a move constructor in the Texture. Also the copy constructor is deleted
         gl::Texture2D m_depth_tex;
+        bool m_has_depth_tex;
 
         std::unordered_map<std::string, int > m_texname2attachment; //maps from each texture name to the corresponding GL_COLOR_ATTACHMENT in the framebuffer. Useful when binding the framebuffer to be written to
 
