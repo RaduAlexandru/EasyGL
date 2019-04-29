@@ -364,12 +364,14 @@ namespace gl{
 
 
         //opengl stores it as floats which are in range [0,1]. By default we return them as such, othewise we denormalize them to the range [0,255]
-        cv::Mat download_to_cv_mat(const bool denormalize=false){
+        cv::Mat download_to_cv_mat(const int lvl=0, const bool denormalize=false){
             //TODO now that the class stores internally the format type and eveything, we should need to use this ffunction that translates from internal_format to format and type
             CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
             CHECK(m_internal_format!=EGL_INVALID) << named("Internal format was not initialized");
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+            //check that the lvl is in a correct range
+            CHECK(lvl>=0 && lvl<=mipmap_highest_idx()) << "Mip map must be in range [0,mipmap_highest_idx()]. So the max lvl idx is: " << mipmap_highest_idx() << " but the input lvl is" << lvl;
 
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
             if( (m_format==GL_RGB || m_format==GL_BGR) && m_width%4!=0){
@@ -380,10 +382,11 @@ namespace gl{
 
             //create the cv_mat and
             int cv_type=gl_internal_format2cv_type(m_internal_format);
-            cv::Mat cv_mat(m_height, m_width, cv_type);
+            //calculate the width and height of the texture at this lvl
+            cv::Mat cv_mat( height_for_lvl(lvl) , width_for_lvl(lvl) , cv_type);
 
             //download from gpu into the cv memory
-            glGetTexImage(GL_TEXTURE_2D,0, m_format, m_type, cv_mat.data);
+            glGetTexImage(GL_TEXTURE_2D,lvl, m_format, m_type, cv_mat.data);
             if(denormalize){
                 cv_mat*=255; //go from range [0,1] to [0,255];
             }
@@ -394,13 +397,19 @@ namespace gl{
             return cv_mat;
         }
 
-        void generate_mipmap(const int max_lvl){
+        void generate_mipmap(const int idx_max_lvl){
             glActiveTexture(GL_TEXTURE0);
             bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_MAX_LEVEL, max_lvl);
+            glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_MAX_LEVEL, idx_max_lvl);
             glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        //creates the full chain of mip map, up until the smallest possible texture
+        void generate_mipmap_full(){
+            int idx_max_lvl=mipmap_highest_idx();
+            generate_mipmap(idx_max_lvl);
         }
 
 
@@ -424,6 +433,8 @@ namespace gl{
 
         int width() const{ return m_width; }
         int height() const{ return m_height; }
+        int width_for_lvl(const int lvl) const{ return std::max(1, (int)floor(m_width /  (int)pow(2,lvl)  )); }
+        int height_for_lvl(const int lvl) const{ return std::max(1,  (int)floor(m_height /  (int)pow(2,lvl)  ));  }
         int channels() const{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             switch(m_format) {
@@ -434,6 +445,11 @@ namespace gl{
                 default : LOG(FATAL) << "We don't know how many channels does this format have.";
             }
         }
+
+        //returns the index of the highest mip map lvl (this is used to plug into generate_mip_map)
+        int mipmap_highest_idx() const { return floor(log2(  std::max(m_width, m_height)  ));  }
+        //return maximum number of mip map lvls, effectivelly it is mipmap_highest_idx+1
+        int mipmap_nr_lvls() const{ return mipmap_highest_idx()+1; }
 
 
     private:
