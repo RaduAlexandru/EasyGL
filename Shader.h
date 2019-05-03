@@ -260,6 +260,18 @@ namespace gl{
             }
         }
 
+        //sends an array of vec2 to the shader. Inside the shader we declare it as vec2 array[SIZE] where size must correspond to the one being sent 
+        void uniform_array_v2_float(const Eigen::MatrixXf mat, const std::string uniform_name){
+            CHECK(mat.cols()==2) << named("The matrix should have 2 columns because we expect a matrix with N rows and 2 columns for the vec3 array.");
+            for(int i=0; i<mat.rows(); i++){ 
+                std::string uniform_array_name;
+                uniform_array_name=uniform_name+"["+std::to_string(i)+"]";
+                GLint uniform_location=get_uniform_location(uniform_array_name);
+                Eigen::Vector2f row=mat.row(i); //cannot use directly mat.row(i).data() because that seems to give us eroneous data, maybe because of column major storing
+                glUniform3fv(uniform_location, 1, row.data()); 
+            }
+        }
+
         void uniform_3x3(const Eigen::Matrix3f mat, const std::string uniform_name){
             GLint uniform_location=get_uniform_location(uniform_name);
             glUniformMatrix3fv(uniform_location, 1, GL_FALSE, mat.data());
