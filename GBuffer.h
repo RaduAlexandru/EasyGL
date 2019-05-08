@@ -143,16 +143,36 @@ namespace gl{
 
         void clear(){
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            GLenum draw_buffers[m_textures.size()];
+            for(int i=0; i<m_textures.size(); i++){
+                int attachment_nr=this->attachment_nr(m_textures[i].name());
+                draw_buffers[i]=GL_COLOR_ATTACHMENT0+attachment_nr;
+            }
+            glDrawBuffers(m_textures.size(), draw_buffers);
+
             glClearColor(0.0, 0.0, 0.0, 0.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
         }
 
         void set_constant(float val){
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            GLenum draw_buffers[m_textures.size()];
+            for(int i=0; i<m_textures.size(); i++){
+                int attachment_nr=this->attachment_nr(m_textures[i].name());
+                draw_buffers[i]=GL_COLOR_ATTACHMENT0+attachment_nr;
+            }
+            glDrawBuffers(m_textures.size(), draw_buffers);
+
             glClearColor(val, val, val, val);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
         }
 
 
