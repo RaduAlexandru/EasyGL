@@ -35,6 +35,7 @@ namespace gl{
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
             set_filter_mode(GL_LINEAR);
+            // set_filter_mode(GL_NEAREST);
 
             glGenFramebuffers(1,&m_fbo_for_clearing_id);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
@@ -428,6 +429,10 @@ namespace gl{
         GLint get_internal_format() const{
             CHECK(m_internal_format!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
+        }
+
+        GLuint fbo_id() const{
+            return m_fbo_for_clearing_id;
         }
 
 

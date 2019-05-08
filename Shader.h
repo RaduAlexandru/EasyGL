@@ -293,6 +293,7 @@ namespace gl{
         void draw_into(const GBuffer& gbuffer, std::initializer_list<  std::pair<std::string, std::string> > output2tex_list){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
+
             int max_location=-1; //will be used to determine how many drawbuffers should be used by seeing how many outputs does the fragment shader actually use
             for(auto output2tex : output2tex_list){
                 std::string frag_out_name=output2tex.first; 
@@ -329,6 +330,27 @@ namespace gl{
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gbuffer.get_fbo_id());
             // glClearColor(0.0, 0.0, 0.0, 0.0);
             // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDrawBuffers(nr_draw_buffers, draw_buffers);
+
+        }
+
+
+        //draw into just one texture, which is not assigned to a gbuffer 
+        void draw_into(const Texture2D& tex, const std::string frag_out_name){
+            CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
+
+
+            int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
+            LOG_IF(WARNING, frag_out_location==-1) << named("Fragment output location for name " + frag_out_name + " is either not declared in the shader or not being used for outputting anything.");
+
+            int max_location=frag_out_location; //we only suppose we have one location in which we draw
+            int nr_draw_buffers=max_location+1; //if max location is 1 it means we use locations 0 and 1 so therefore we need 2 drawbuffers
+            GLenum draw_buffers[nr_draw_buffers];
+            for(int i=0; i<nr_draw_buffers; i++){
+                draw_buffers[i]=GL_NONE; //initialize to gl_none
+            }
+            draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }
