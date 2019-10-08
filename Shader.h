@@ -359,6 +359,14 @@ namespace gl{
         int get_prog_id() const{
             return m_prog_id;
         }
+        
+        GLint get_uniform_location(std::string uniform_name){
+            this->use();
+            GLint uniform_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
+            LOG_IF(WARNING,uniform_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
+            return uniform_location;
+        }
+        
 
     private:
         std::string m_name;
@@ -377,13 +385,6 @@ namespace gl{
             return m_name.empty()? msg : m_name + ": " + msg; 
         } 
 
-
-        GLint get_uniform_location(std::string uniform_name){
-            this->use();
-            GLint uniform_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
-            LOG_IF(WARNING,uniform_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
-            return uniform_location;
-        }
 
         //for compute shaders
         GLuint program_init( const std::string &compute_shader_string){
