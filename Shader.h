@@ -12,6 +12,7 @@
 #include "Texture3D.h"
 #include "Buf.h"
 #include "GBuffer.h"
+#include "CubeMap.h"
 
 #include <iostream>
 
@@ -351,6 +352,27 @@ namespace gl{
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
+            glDrawBuffers(nr_draw_buffers, draw_buffers);
+
+        }
+
+        //draw into one of the faces of a cubemap
+        void draw_into(const CubeMap& tex, const std::string frag_out_name, const int cube_face_idx){
+            CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
+
+
+            int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
+            LOG_IF(WARNING, frag_out_location==-1) << named("Fragment output location for name " + frag_out_name + " is either not declared in the shader or not being used for outputting anything.");
+
+            int max_location=frag_out_location; //we only suppose we have one location in which we draw
+            int nr_draw_buffers=max_location+1; //if max location is 1 it means we use locations 0 and 1 so therefore we need 2 drawbuffers
+            GLenum draw_buffers[nr_draw_buffers];
+            for(int i=0; i<nr_draw_buffers; i++){
+                draw_buffers[i]=GL_NONE; //initialize to gl_none
+            }
+            draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.get_tex_id(), 0); //attach to the framebuffer the correct face
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }

@@ -85,13 +85,7 @@ namespace gl{
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
             CHECK(is_type_valid(type)) << named("Type not valid");
-            //todo needs an overload that doesnt take the internal format, format and type and assumes that the ftexture storage is already intiialized
-            m_width=width;
-            m_height=height;
-            m_internal_format=internal_format;
-            m_format=format;
-            m_type=type;
-
+            
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
             if( (format==GL_RGB || format==GL_BGR) && width%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -102,15 +96,24 @@ namespace gl{
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]) );
 
 
-
-            if(!m_pbo_storages_initialized[m_cur_pbo_idx]){
+            VLOG(1) << "m_width and m_heigth is " << m_width << " " << m_height << " width and height is " << width << "  "<< height;
+            if(!m_pbo_storages_initialized[m_cur_pbo_idx] || m_width!=width || m_height!=height){
+                VLOG(1) << "allocating pbo";
                 GL_C (glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW) ); //allocate storage for pbo
                 m_pbo_storages_initialized[m_cur_pbo_idx]=true;
             }
-            if(!m_tex_storage_initialized){
+            if(!m_tex_storage_initialized || m_width!=width || m_height!=height){
+                VLOG(1) << "allocating tex";
                 GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
                 m_tex_storage_initialized=true;
             }
+
+            //this assignments need to be here because only here we actually create the storage and we check that m_width!=width
+            m_width=width;
+            m_height=height;
+            m_internal_format=internal_format;
+            m_format=format;
+            m_type=type;
 
 
             // //update pbo (buffer orhpaning doesnt quite work for pbos as explained here https://www.opengl.org/discussion_boards/archive/index.php/t-173488.html)
@@ -147,8 +150,8 @@ namespace gl{
 
             CHECK(cv_mat.data) << "cv_mat is empty";
 
-            m_width=cv_mat.cols;
-            m_height=cv_mat.rows;
+            // m_width=cv_mat.cols;
+            // m_height=cv_mat.rows;
             //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
 
             //the best format for fast upload using pbos and dmo is
@@ -167,6 +170,9 @@ namespace gl{
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
             CHECK(is_type_valid(type)) << named("Type not valid");
+            if (m_internal_format!=EGL_INVALID){ //if we already have a format, it should be compatible with the one we are using for uploding
+                CHECK(m_internal_format==internal_format) << "Previously defined internal format is not the same as the one which will be used for the opencv image upload";
+            }
 
             //do the upload to the pbo
             int size_bytes=cv_mat.step[0] * cv_mat.rows;
