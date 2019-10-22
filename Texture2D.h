@@ -29,12 +29,13 @@ namespace gl{
             //create some pbos
             m_pbo_ids.resize(m_nr_pbos,EGL_INVALID);
             m_pbo_storages_initialized.resize(m_nr_pbos,false);
+            m_pbo_sizes.resize(m_nr_pbos, {-1,-1});
             glGenBuffers(m_nr_pbos, m_pbo_ids.data());
 
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
-            set_filter_mode(GL_LINEAR);
+            set_filter_mode_min_mag(GL_LINEAR);
             // set_filter_mode(GL_NEAREST);
 
             glGenFramebuffers(1,&m_fbo_for_clearing_id);
@@ -76,7 +77,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
         }
 
-        void set_filter_mode(const GLenum filter_mode){
+        void set_filter_mode_min_mag(const GLenum filter_mode){
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
@@ -96,14 +97,15 @@ namespace gl{
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]) );
 
 
-            VLOG(1) << "m_width and m_heigth is " << m_width << " " << m_height << " width and height is " << width << "  "<< height;
-            if(!m_pbo_storages_initialized[m_cur_pbo_idx] || m_width!=width || m_height!=height){
-                VLOG(1) << "allocating pbo";
+            // VLOG(1) << "m_width and m_heigth is " << m_width << " " << m_height << " width and height is " << width << "  "<< height;
+            if(!m_pbo_storages_initialized[m_cur_pbo_idx] || std::get<0>(m_pbo_sizes[m_cur_pbo_idx])!=width || std::get<1>(m_pbo_sizes[m_cur_pbo_idx])!=height){
+                // VLOG(1) << "allocating pbo";
                 GL_C (glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW) ); //allocate storage for pbo
                 m_pbo_storages_initialized[m_cur_pbo_idx]=true;
+                m_pbo_sizes[m_cur_pbo_idx]=std::make_pair(width, height);
             }
             if(!m_tex_storage_initialized || m_width!=width || m_height!=height){
-                VLOG(1) << "allocating tex";
+                // VLOG(1) << "allocating tex";
                 GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
                 m_tex_storage_initialized=true;
             }
@@ -483,6 +485,7 @@ namespace gl{
 
         int m_nr_pbos;
         std::vector<GLuint> m_pbo_ids;
+        std::vector<std::pair<int,int>> m_pbo_sizes;
         std::vector<bool> m_pbo_storages_initialized;
         int m_cur_pbo_idx; //index into the pbo that we will use for uploading
 

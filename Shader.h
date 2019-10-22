@@ -357,7 +357,7 @@ namespace gl{
         }
 
         //draw into one of the faces of a cubemap
-        void draw_into(const CubeMap& tex, const std::string frag_out_name, const int cube_face_idx){
+        void draw_into(const CubeMap& tex, const std::string frag_out_name, const int cube_face_idx, const int mip=0){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
 
@@ -372,9 +372,8 @@ namespace gl{
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.get_tex_id(), 0); //attach to the framebuffer the correct face
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.get_tex_id(), mip); //attach to the framebuffer the correct face
             glDrawBuffers(nr_draw_buffers, draw_buffers);
-
         }
 
 

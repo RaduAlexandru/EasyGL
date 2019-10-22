@@ -26,7 +26,7 @@ namespace gl{
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
-            set_filter_mode(GL_LINEAR);
+            set_filter_mode_min_mag(GL_LINEAR);
             // set_filter_mode(GL_NEAREST);
 
             //for clearing we use a framebuffer that will look through all of the 6 faces and clear them all https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/6.pbr/2.1.1.ibl_irradiance_conversion/ibl_irradiance_conversion.cpp
@@ -69,11 +69,21 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, wrap_mode);
         }
 
-        void set_filter_mode(const GLenum filter_mode){
+        void set_filter_mode_min_mag(const GLenum filter_mode){
             glBindTexture(GL_TEXTURE_CUBE_MAP, m_tex_id);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
+
+        void set_filter_mode_min(const GLenum filter_mode){
+            glBindTexture(GL_TEXTURE_CUBE_MAP, m_tex_id);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, filter_mode);
+        }
+
+        void set_filter_mode_mag(const GLenum filter_mode){
+            glBindTexture(GL_TEXTURE_CUBE_MAP, m_tex_id);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, filter_mode);
+        } 
         
 
         void resize(const int w, const int h){

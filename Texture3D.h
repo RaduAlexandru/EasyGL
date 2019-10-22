@@ -28,7 +28,7 @@ namespace gl{
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
-            set_filter_mode(GL_LINEAR);
+            set_filter_mode_min_mag(GL_LINEAR);
         }
 
         Texture3D(std::string name):
@@ -64,7 +64,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, wrap_mode);
         }
 
-        void set_filter_mode(const GLenum filter_mode){
+        void set_filter_mode_min_mag(const GLenum filter_mode){
             glBindTexture(GL_TEXTURE_3D, m_tex_id);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, filter_mode);
