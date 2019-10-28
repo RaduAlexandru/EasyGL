@@ -51,7 +51,7 @@ namespace gl{
         }
 
         ~Texture2D(){
-            LOG(WARNING) << named("Destroying texture");
+            // LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }

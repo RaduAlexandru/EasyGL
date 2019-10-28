@@ -34,7 +34,7 @@ namespace gl{
         }
 
         ~GBuffer(){
-            LOG(WARNING) << named("Destroying gbuffer");
+            // LOG(WARNING) << named("Destroying gbuffer");
             glDeleteFramebuffers(1, &m_fbo_id);
         }
 

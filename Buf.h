@@ -30,7 +30,7 @@ namespace gl{
         }
 
         ~Buf(){
-            LOG(WARNING) << named("Destroying buffer");
+            // LOG(WARNING) << named("Destroying buffer");
             glDeleteBuffers(1, &m_buf_id);
         }
 

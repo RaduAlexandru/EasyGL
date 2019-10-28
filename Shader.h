@@ -44,7 +44,7 @@ namespace gl{
         }
 
         ~Shader(){
-            LOG(WARNING) << named("Destroying shader program");
+            // LOG(WARNING) << named("Destroying shader program");
             glUseProgram(0);
             glDeleteProgram(m_prog_id);
         }

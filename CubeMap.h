@@ -43,7 +43,7 @@ namespace gl{
         }
 
         ~CubeMap(){
-            LOG(WARNING) << named("Destroying texture");
+            // LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
         }
 

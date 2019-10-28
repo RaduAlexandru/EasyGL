@@ -19,7 +19,7 @@ namespace gl{
         }
 
         ~VertexArrayObject(){
-            LOG(WARNING) << named("Destroying VAO");
+            // LOG(WARNING) << named("Destroying VAO");
             glDeleteVertexArrays(1, &m_id);
         }
 
