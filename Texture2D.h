@@ -24,31 +24,25 @@ namespace gl{
             m_type(EGL_INVALID),
             m_nr_pbos(2),
             m_cur_pbo_idx(0){
-            VLOG(1) << "Trying to create texture";
-
-            GL_C( glGenTextures(1,&m_tex_id) );
-            VLOG(1) << "1111";
+            glGenTextures(1,&m_tex_id);
 
             //create some pbos
             m_pbo_ids.resize(m_nr_pbos,EGL_INVALID);
             m_pbo_storages_initialized.resize(m_nr_pbos,false);
             m_pbo_sizes.resize(m_nr_pbos, {-1,-1});
-            GL_C( glGenBuffers(m_nr_pbos, m_pbo_ids.data()) );
+            glGenBuffers(m_nr_pbos, m_pbo_ids.data());
 
-            VLOG(1) << "222";
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
             set_filter_mode_min_mag(GL_LINEAR);
             // set_filter_mode(GL_NEAREST);
-            VLOG(1) << "333";
 
-            GL_C ( glGenFramebuffers(1,&m_fbo_for_clearing_id) );
-            GL_C ( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id) );
-            GL_C ( glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0) );
-            GL_C ( glDrawBuffer(GL_COLOR_ATTACHMENT0) ); //Only need to do this once.
-            GL_C ( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) ); 
-            VLOG(1) << "Created texture";
+            glGenFramebuffers(1,&m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
         Texture2D(std::string name):
@@ -374,16 +368,7 @@ namespace gl{
             glClearColor(val, val, val, val_alpha);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        }
 
-        void set_val(const Eigen::Vector4f& color_and_alpha){
-            CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
-            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
-            
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
-            glClearColor(color_and_alpha.x(), color_and_alpha.y(), color_and_alpha.z(), color_and_alpha.w());
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
 
