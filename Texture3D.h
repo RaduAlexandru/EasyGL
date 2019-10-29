@@ -156,15 +156,15 @@ namespace gl{
             glBindTexture(GL_TEXTURE_3D, m_tex_id);
         }
 
-        int get_tex_id() const{
+        int tex_id() const{
             return m_tex_id;
         }
 
-        bool get_tex_storage_initialized () const{
+        bool storage_initialized () const{
             return m_tex_storage_initialized;
         }
 
-        GLint get_internal_format() const{
+        GLint internal_format() const{
             CHECK(m_internal_format!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }

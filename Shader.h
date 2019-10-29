@@ -86,7 +86,7 @@ namespace gl{
         template <class T>
         void bind_texture(const T& tex, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
-            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has not storage initialized");
+            CHECK(tex.storage_initialized()) << named("Texture " + tex.name() + " has not storage initialized");
 
             //get the location in shader for the sampler
             GLint shader_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
@@ -113,8 +113,8 @@ namespace gl{
         //bind with a certain access mode a 2D image
         void bind_image(const gl::Texture2D& tex, const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
-            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
-            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
+            CHECK(tex.storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+            CHECK(is_internal_format_valid_for_image_bind(tex.internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
 
             // check_format_is_valid_for_image_bind(tex);
 
@@ -134,14 +134,14 @@ namespace gl{
 
 
 
-            GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_FALSE, 0, access, tex.get_internal_format()));
+            GL_C(glBindImageTexture(cur_image_unit, tex.tex_id(), 0, GL_FALSE, 0, access, tex.internal_format()));
         }
 
         //bind all layers of the Texture Array
         void bind_image(const gl::Texture2DArray& tex,  const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
-            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
-            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
+            CHECK(tex.storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+            CHECK(is_internal_format_valid_for_image_bind(tex.internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
 
             // check_format_is_valid_for_image_bind(tex);
 
@@ -158,7 +158,7 @@ namespace gl{
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
             CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
-            GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_TRUE, 0, access, tex.get_internal_format()));
+            GL_C(glBindImageTexture(cur_image_unit, tex.tex_id(), 0, GL_TRUE, 0, access, tex.internal_format()));
         }
 
         // //binding a Texture array but binds a specific layer
@@ -172,8 +172,8 @@ namespace gl{
         //bind all layers of Texture 3D
         void bind_image(const gl::Texture3D& tex,  const GLenum access, const std::string& uniform_name){
             CHECK(m_is_compiled) << named("Program is not compiled! Use prog.compile() first");
-            CHECK(tex.get_tex_storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
-            CHECK(is_internal_format_valid_for_image_bind(tex.get_internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
+            CHECK(tex.storage_initialized()) << named("Texture " + tex.name() + " has no storage initialized");
+            CHECK(is_internal_format_valid_for_image_bind(tex.internal_format())) << named("Texture " ) << tex.name() << "is internal format invalid for image bind. Check the list of valid formats at https://www.khronos.org/opengl/wiki/Image_Load_Store";
             // check_format_is_valid_for_image_bind(tex);
 
             int cur_image_unit;
@@ -189,7 +189,7 @@ namespace gl{
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
             CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
-            GL_C(glBindImageTexture(cur_image_unit, tex.get_tex_id(), 0, GL_TRUE, 0, access, tex.get_internal_format()));
+            GL_C(glBindImageTexture(cur_image_unit, tex.tex_id(), 0, GL_TRUE, 0, access, tex.internal_format()));
         }
 
 
@@ -209,7 +209,7 @@ namespace gl{
             uniform_int(cur_image_unit, uniform_name); //we cna either use binding=x in the shader or we can set it programatically like this
             CHECK(m_nr_image_units_used<m_max_allowed_image_units) << named("You used too many image units! Try to bind less images to the shader");
 
-            glBindBufferBase(buf.get_target(), cur_image_unit, buf.get_buf_id());
+            glBindBufferBase(buf.target(), cur_image_unit, buf.buf_id());
         }
 
         GLint get_attrib_location(const std::string attrib_name) const{
@@ -372,7 +372,7 @@ namespace gl{
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.get_tex_id(), mip); //attach to the framebuffer the correct face
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); //attach to the framebuffer the correct face
             glDrawBuffers(nr_draw_buffers, draw_buffers);
         }
 

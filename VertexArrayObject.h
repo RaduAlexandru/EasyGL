@@ -39,7 +39,7 @@ namespace gl{
         }
 
         void vertex_attribute(const gl::Shader& prog, const std::string& attrib_name, const gl::Buf& buf, const int size) const{
-            CHECK(buf.get_buf_storage_initialized()) << "Cannot set this vertex atribute to the buffer " << buf.name() << " because the buffer has no storage yet. Use buffer.upload_data first";
+            CHECK(buf.storage_initialized()) << "Cannot set this vertex atribute to the buffer " << buf.name() << " because the buffer has no storage yet. Use buffer.upload_data first";
 
             this->bind();
             buf.bind();

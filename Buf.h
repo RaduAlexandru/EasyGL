@@ -67,6 +67,19 @@ namespace gl{
             glBufferData(m_target, m_size_bytes, NULL, m_usage_hints);
         }
 
+        void allocate_storage(const GLsizei size_bytes, const GLenum usage_hints ){
+            if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            if(size_bytes==0) return; 
+
+            glBindBuffer(m_target, m_buf_id);
+            glBufferData(m_target, size_bytes, NULL, usage_hints);
+
+            m_size_bytes=size_bytes;
+            m_usage_hints=usage_hints;
+            m_buf_storage_initialized=true;
+        }
+
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(size_bytes==0) return; 
@@ -125,6 +138,15 @@ namespace gl{
             glBufferSubData(m_target, offset, size_bytes, data_ptr);
         }
 
+        //same without target and with offset zero
+        void upload_sub_data( const GLsizei size_bytes, const void* data_ptr){
+            if(!m_buf_storage_initialized) LOG(FATAL) << named("Buffer has no storage initialized. Use upload_data, or allocate_inmutable.");
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+
+            glBindBuffer(m_target, m_buf_id);
+            glBufferSubData(m_target, 0, size_bytes, data_ptr);
+        }
+
         void bind_for_modify(const GLint uniform_location){
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(uniform_location==EGL_INVALID)  LOG(WARNING) << named("Uniform location does not exist");
@@ -173,15 +195,15 @@ namespace gl{
             glBindBuffer( m_target, m_buf_id );
         }
 
-        GLenum get_target() const {
+        GLenum target() const {
             return m_target;
         }
 
-        int get_buf_id() const{
+        int buf_id() const{
             return m_buf_id;
         }
 
-        bool get_buf_storage_initialized () const{
+        bool storage_initialized () const{
             return m_buf_storage_initialized;
         }
 

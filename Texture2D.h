@@ -6,6 +6,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "UtilsGL.h"
+#include "Buf.h"
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
 #define EGL_INVALID 2147483647 
@@ -22,15 +23,22 @@ namespace gl{
             m_internal_format(EGL_INVALID),
             m_format(EGL_INVALID),
             m_type(EGL_INVALID),
-            m_nr_pbos(2),
-            m_cur_pbo_idx(0){
+            m_nr_pbos_upload(2),
+            m_cur_pbo_upload_idx(0),
+            m_nr_pbos_download(2),
+            m_cur_pbo_download_idx(0){
             glGenTextures(1,&m_tex_id);
 
-            //create some pbos
-            m_pbo_ids.resize(m_nr_pbos,EGL_INVALID);
-            m_pbo_storages_initialized.resize(m_nr_pbos,false);
-            m_pbo_sizes.resize(m_nr_pbos, {-1,-1});
-            glGenBuffers(m_nr_pbos, m_pbo_ids.data());
+            //create some pbos used for uploading to the texture
+            m_pbos_upload.resize(m_nr_pbos_upload);
+            for(int i=0; i<m_nr_pbos_upload; i++){
+                m_pbos_upload[i].set_target(GL_PIXEL_UNPACK_BUFFER);
+            }
+            //create some pbos used to download this texture to cpu
+            m_pbos_download.resize(m_nr_pbos_download);
+            for(int i=0; i<m_nr_pbos_download; i++){
+                m_pbos_download[i].set_target(GL_PIXEL_PACK_BUFFER);
+            }
 
 
             //start with some sensible parameter initialziations
@@ -53,7 +61,6 @@ namespace gl{
         ~Texture2D(){
             // LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
-            glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
 
         //rule of five (make the class non copyable)   
@@ -92,20 +99,19 @@ namespace gl{
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
+            
             // bind the texture and PBO
             GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
-            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo_ids[m_cur_pbo_idx]) );
+            Buf& pbo_upload=m_pbos_upload[m_cur_pbo_upload_idx];
+            pbo_upload.bind();
 
 
-            // VLOG(1) << "m_width and m_heigth is " << m_width << " " << m_height << " width and height is " << width << "  "<< height;
-            if(!m_pbo_storages_initialized[m_cur_pbo_idx] || std::get<0>(m_pbo_sizes[m_cur_pbo_idx])!=width || std::get<1>(m_pbo_sizes[m_cur_pbo_idx])!=height){
-                // VLOG(1) << "allocating pbo";
-                GL_C (glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, NULL, GL_STREAM_DRAW) ); //allocate storage for pbo
-                m_pbo_storages_initialized[m_cur_pbo_idx]=true;
-                m_pbo_sizes[m_cur_pbo_idx]=std::make_pair(width, height);
+            if(!pbo_upload.storage_initialized() || pbo_upload.width()!=width || pbo_upload.height()!=height){
+                pbo_upload.allocate_storage(size_bytes, GL_STREAM_DRAW);
+                pbo_upload.set_width(width);
+                pbo_upload.set_height(height);
             }
             if(!m_tex_storage_initialized || m_width!=width || m_height!=height){
-                // VLOG(1) << "allocating tex";
                 GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
                 m_tex_storage_initialized=true;
             }
@@ -118,27 +124,19 @@ namespace gl{
             m_type=type;
 
 
-            // //update pbo (buffer orhpaning doesnt quite work for pbos as explained here https://www.opengl.org/discussion_boards/archive/index.php/t-173488.html)
-            // glBufferData(GL_PIXEL_UNPACK_BUFFER, size_bytes, 0, GL_STREAM_DRAW); //orphan the pbo storage
-            // GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-            // if(ptr){
-            //     memcpy(ptr, data_ptr, size_bytes);
-            //     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
-            // }
 
-            //attempt 2 to update the pbo fast, mapping and doing a memcpy is slower
-            GL_C( glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, size_bytes, data_ptr) );
+            //update the pbo fast, mapping and doing a memcpy is slower, it is faster to do a upload_subdata
+            pbo_upload.upload_sub_data(size_bytes, data_ptr);
 
 
             // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
             GL_C( glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0) );
 
 
-            // it is good idea to release PBOs with ID 0 after use.
-            // Once bound with 0, all pixel operations behave normal ways.
+            // it is good idea to release PBOs with ID 0 after use. Once bound with 0, all pixel operations behave normal ways.
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
 
-            m_cur_pbo_idx=(m_cur_pbo_idx+1)%m_nr_pbos;
+            m_cur_pbo_upload_idx=(m_cur_pbo_upload_idx+1)%m_nr_pbos_upload;
 
             //change back to unpack alignment of 4 which would be the default in case we changed it before
             glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -151,17 +149,6 @@ namespace gl{
             //TODO needs to be rechecked as we now store as class member the internal format, format and type
 
             CHECK(cv_mat.data) << "cv_mat is empty";
-
-            // m_width=cv_mat.cols;
-            // m_height=cv_mat.rows;
-            //we prefer however the cv mats with 4 channels as explained here on mhaigan reponse https://www.gamedev.net/forums/topic/588328-gltexsubimage2d-performance/
-
-            //the best format for fast upload using pbos and dmo is
-            /*
-            internalformal: GL_RGBA
-            format: GL_BGRA
-            type: GL_UNSIGNED_INT_8_8_8_8_REV
-            */
 
             //from the cv format get the corresponding gl internal_format, format and type
             GLint internal_format=EGL_INVALID;
@@ -209,7 +196,7 @@ namespace gl{
 
 
         //allocate mutable texture storage and leave it uninitialized
-        void allocate_tex_storage(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
+        void allocate_storage(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
             CHECK(is_type_valid(type)) << named("Type not valid");
@@ -229,7 +216,7 @@ namespace gl{
 
 
         //allocate inmutable texture storage
-        void allocate_tex_storage_inmutable(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
+        void allocate_storage_inmutable(GLenum internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height){
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
             CHECK(is_type_valid(type)) << named("Type not valid");
@@ -252,7 +239,7 @@ namespace gl{
             CHECK(is_type_valid(type)) << named("Type not valid");
 
             if(!m_tex_storage_initialized){
-                allocate_tex_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it 
+                allocate_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it 
             }else if(m_tex_storage_initialized && (m_width!=width || m_height!=height ) ){
                 resize( width, height ); // initialized but the texture changed size and we have to resize the buffer
             }
@@ -437,15 +424,15 @@ namespace gl{
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
         }
 
-        int get_tex_id() const{
+        int tex_id() const{
             return m_tex_id;
         }
 
-        bool get_tex_storage_initialized () const{
+        bool storage_initialized () const{
             return m_tex_storage_initialized;
         }
 
-        GLint get_internal_format() const{
+        GLint internal_format() const{
             CHECK(m_internal_format!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a format");
             return m_internal_format;
         }
@@ -486,19 +473,21 @@ namespace gl{
         std::string m_name;
 
         GLuint m_tex_id;
-        // GLuint m_pbo_id;
         bool m_tex_storage_initialized;
         bool m_tex_storage_inmutable;
-        // bool m_pbo_storage_initialized;
         GLint m_internal_format;
         GLenum m_format;
         GLenum m_type;
 
-        int m_nr_pbos;
-        std::vector<GLuint> m_pbo_ids;
-        std::vector<std::pair<int,int>> m_pbo_sizes;
-        std::vector<bool> m_pbo_storages_initialized;
-        int m_cur_pbo_idx; //index into the pbo that we will use for uploading
+        //pbos for uploading data into the texture
+        int m_nr_pbos_upload;
+        int m_cur_pbo_upload_idx; //index into the pbo that we will use for uploading
+        std::vector<gl::Buf> m_pbos_upload;
+
+        //pbos used for downloading the texture
+        int m_nr_pbos_download;
+        int m_cur_pbo_download_idx; //index into the pbo that we will use for downloading to cpu
+        std::vector<gl::Buf> m_pbos_download;
 
 
         GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage

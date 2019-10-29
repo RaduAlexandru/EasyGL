@@ -52,14 +52,14 @@ namespace gl{
             m_textures.emplace_back(name); 
 
             if(m_width!=0 && m_height!=0) { //we already used set_size() so we have some size for the whole gbuffer so we can already allocate using a certain size
-                m_textures.back().allocate_tex_storage(internal_format, format, type, m_width, m_height );
+                m_textures.back().allocate_storage(internal_format, format, type, m_width, m_height );
             }else{
-                m_textures.back().allocate_tex_storage(internal_format, format, type, 0, 0);
+                m_textures.back().allocate_storage(internal_format, format, type, 0, 0);
             }
 
             //add this new texture as an attachment to the framebuffer 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + m_textures.size()-1, GL_TEXTURE_2D, m_textures.back().get_tex_id(), 0);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + m_textures.size()-1, GL_TEXTURE_2D, m_textures.back().tex_id(), 0);
             m_texname2attachment[name]=m_textures.size()-1;
 
             // restore default FBO
@@ -71,16 +71,16 @@ namespace gl{
             m_has_depth_tex=true;
             m_depth_tex.set_name(name);
             if(m_width!=0 && m_height!=0){
-                 m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //for more precise depth which translates in more precise shading because we reconstruct the position based on the depth
+                 m_depth_tex.allocate_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //for more precise depth which translates in more precise shading because we reconstruct the position based on the depth
                 // m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //we do't really need the stencil but it's nice to hace a fully 4 byte aligned texture
             }else{
-                 m_depth_tex.allocate_tex_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, 0, 0); 
+                 m_depth_tex.allocate_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, 0, 0); 
                 // m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
             }
 
             //add this new texture as an attachment to the framebuffer 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth_tex.get_tex_id(), 0);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth_tex.tex_id(), 0);
 
             // restore default FBO
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -124,7 +124,7 @@ namespace gl{
             }
         
             //resize also the depth
-            if(  m_has_depth_tex && (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.get_tex_storage_initialized() ){ 
+            if(  m_has_depth_tex && (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.storage_initialized() ){ 
                 m_depth_tex.resize(w,h);
             }
 
