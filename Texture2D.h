@@ -25,7 +25,7 @@ namespace gl{
             m_type(EGL_INVALID),
             m_nr_pbos_upload(2),
             m_cur_pbo_upload_idx(0),
-            m_nr_pbos_download(2),
+            m_nr_pbos_download(3),
             m_cur_pbo_download_idx(0){
             glGenTextures(1,&m_tex_id);
 
@@ -323,6 +323,69 @@ namespace gl{
         //     return cv_mat;
         // }
 
+        //transfers data from the texture into a pbo. Useful for later reading the pbo with download_from_oldest_pbo() and transfering to cpu without stalling the pipeline
+        void download_to_pbo(){
+            CHECK(storage_initialized()) << named("Texture storage not initialized");
+            
+            //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
+            if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            }
+
+            
+            // bind the texture and PBO
+            GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
+            Buf& pbo_download=m_pbos_download[m_cur_pbo_download_idx];
+            pbo_download.bind();
+
+
+            if(!pbo_download.storage_initialized() || pbo_download.width()!=width() || pbo_download.height()!=height()){
+                int size_bytes=width()*height()*channels()*bytes_per_element();
+                pbo_download.allocate_storage(size_bytes, GL_STREAM_DRAW);
+                pbo_download.set_width(width());
+                pbo_download.set_height(height());
+            }
+
+
+            //transfer from texture to pbo
+            glGetTexImage(GL_TEXTURE_2D, 0, m_format, m_type, 0);
+           
+
+            // it is good idea to release PBOs with ID 0 after use. Once bound with 0, all pixel operations behave normal ways.
+            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
+            m_cur_pbo_download_idx=(m_cur_pbo_download_idx+1)%m_nr_pbos_download;
+            //change back to unpack alignment of 4 which would be the default in case we changed it before
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        }
+
+        void download_from_oldest_pbo(void* data_out){
+            //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
+            if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            }
+            
+            // bind the PBO and copy the dtaa from it
+            Buf& pbo_download=m_pbos_download[m_cur_pbo_download_idx];
+            if(pbo_download.storage_initialized()){
+                pbo_download.bind();
+
+                void* data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+                memcpy(data_out, data, pbo_download.size_bytes());
+                glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0 );
+
+            }
+
+            //change back to unpack alignment of 4 which would be the default in case we changed it before
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        }
+
+        Buf& cur_pbo_download(){
+            return m_pbos_download[m_cur_pbo_download_idx];
+        }
+
+
+
         //clears the texture to zero
         void clear(){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
@@ -456,6 +519,20 @@ namespace gl{
                 default : LOG(FATAL) << "We don't know how many channels does this format have.";
             }
         }
+        int bytes_per_element() const{
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+            switch(m_type) {
+                case GL_UNSIGNED_BYTE : return 1; break;
+                case GL_BYTE : return 1; break;
+                case GL_UNSIGNED_SHORT : return 2; break;
+                case GL_SHORT : return 2; break;
+                case GL_UNSIGNED_INT : return 4; break;
+                case GL_INT : return 4; break;
+                case GL_HALF_FLOAT : return 2; break;
+                case GL_FLOAT : return 4; break;
+                default : LOG(FATAL) << "We don't know this type.";
+            }
+        }
 
         //returns the index of the highest mip map lvl (this is used to plug into generate_mip_map)
         int mipmap_highest_idx() const { return floor(log2(  std::max(m_width, m_height)  ));  }
@@ -486,7 +563,7 @@ namespace gl{
 
         //pbos used for downloading the texture
         int m_nr_pbos_download;
-        int m_cur_pbo_download_idx; //index into the pbo that we will use for downloading to cpu
+        int m_cur_pbo_download_idx; //index into the pbo that we will use for downloading to cpu. It point at the pbo we will use for writing next time we call download_to_pbo. Also it is the one we use for reading when calling download_from_oldest_pbo() because this is the oldest one and the current one that will get overwritten if we were to write into it
         std::vector<gl::Buf> m_pbos_download;
 
 

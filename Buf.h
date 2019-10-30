@@ -229,10 +229,12 @@ namespace gl{
         void set_depth(const int depth){
             m_depth=depth;
         }
-        int width() const{ LOG_IF(WARNING,m_width==0) << "Width of the texture is 0"; return m_width; };
-        int height() const{ LOG_IF(WARNING,m_height==0) << "Height of the texture is 0";return m_height; };
-        int depth() const{ LOG_IF(WARNING,m_depth==0) << "Depth of the texture is 0";return m_depth; };
-
+        int width() const{ LOG_IF(WARNING,m_width==0) << "Width of the buffer is 0"; return m_width; };
+        int height() const{ LOG_IF(WARNING,m_height==0) << "Height of the buffer is 0";return m_height; };
+        int depth() const{ LOG_IF(WARNING,m_depth==0) << "Depth of the buffer is 0";return m_depth; };
+        int size_bytes(){
+            return m_size_bytes;
+        }
 
         //download from gpu to cpu
         void download(void* destination_data_ptr, const int bytes_to_copy){
