@@ -147,7 +147,7 @@ namespace gl{
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
             GLenum draw_buffers[m_textures.size()];
-            for(int i=0; i<m_textures.size(); i++){
+            for(size_t i=0; i<m_textures.size(); i++){
                 int attachment_nr=this->attachment_nr(m_textures[i].name());
                 draw_buffers[i]=GL_COLOR_ATTACHMENT0+attachment_nr;
             }
@@ -171,7 +171,7 @@ namespace gl{
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
             GLenum draw_buffers[m_textures.size()];
-            for(int i=0; i<m_textures.size(); i++){
+            for(size_t i=0; i<m_textures.size(); i++){
                 int attachment_nr=this->attachment_nr(m_textures[i].name());
                 draw_buffers[i]=GL_COLOR_ATTACHMENT0+attachment_nr;
             }

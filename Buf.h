@@ -12,6 +12,8 @@ namespace gl{
     class Buf{
     public:
         Buf():
+            m_width(0),
+            m_height(0),
             m_buf_id(EGL_INVALID),
             m_buf_storage_initialized(false),
             m_buf_is_inmutable(false),
@@ -19,7 +21,8 @@ namespace gl{
             m_usage_hints(EGL_INVALID),
             m_size_bytes(EGL_INVALID),
             m_is_cpu_dirty(false),
-            m_is_gpu_dirty(false){
+            m_is_gpu_dirty(false)
+            {
 
             glGenBuffers(1,&m_buf_id);
         }

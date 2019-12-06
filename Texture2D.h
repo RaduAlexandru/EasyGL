@@ -516,7 +516,7 @@ namespace gl{
                 case GL_RG : return 2; break;
                 case GL_RGB : return 3; break;
                 case GL_RGBA : return 4; break;
-                default : LOG(FATAL) << "We don't know how many channels does this format have.";
+                default : LOG(FATAL) << "We don't know how many channels does this format have."; return 0: break;
             }
         }
         int bytes_per_element() const{
@@ -530,7 +530,7 @@ namespace gl{
                 case GL_INT : return 4; break;
                 case GL_HALF_FLOAT : return 2; break;
                 case GL_FLOAT : return 4; break;
-                default : LOG(FATAL) << "We don't know this type.";
+                default : LOG(FATAL) << "We don't know this type."; return 0: break;
             }
         }
 
