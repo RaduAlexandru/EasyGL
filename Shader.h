@@ -337,7 +337,7 @@ namespace gl{
 
 
         //draw into just one texture, which is not assigned to a gbuffer 
-        void draw_into(const Texture2D& tex, const std::string frag_out_name){
+        void draw_into(const Texture2D& tex, const std::string frag_out_name, const int mip=0){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
 
@@ -352,6 +352,7 @@ namespace gl{
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }
