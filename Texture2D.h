@@ -23,6 +23,7 @@ namespace gl{
             m_internal_format(EGL_INVALID),
             m_format(EGL_INVALID),
             m_type(EGL_INVALID),
+            m_idx_mipmap_allocated(0),
             m_nr_pbos_upload(2),
             m_cur_pbo_upload_idx(0),
             m_nr_pbos_download(3),
@@ -40,6 +41,10 @@ namespace gl{
                 m_pbos_download[i].set_target(GL_PIXEL_PACK_BUFFER);
             }
 
+            //initializing a texture requires setting the mip map levels  https://www.khronos.org/opengl/wiki/Common_Mistakes
+            bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
             //start with some sensible parameter initialziations
             set_wrap_mode(GL_CLAMP_TO_EDGE);
@@ -192,6 +197,11 @@ namespace gl{
 
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexImage2D(GL_TEXTURE_2D, 0, m_internal_format, w, h, 0, m_format, m_type, 0); //allocate storage texture
+
+            //if we have mip map levels we have to regenerate the memory for them too
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
         }
 
 
@@ -212,6 +222,11 @@ namespace gl{
         
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
             m_tex_storage_initialized=true;
+
+            //if we have mip map levels we have to regenerate the memory for them too
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
         }
 
 
@@ -408,6 +423,12 @@ namespace gl{
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+            //if we have mip map levels we have to clear also the lower levels
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
+            
+
         }
 
         void set_constant(float val, float val_alpha){
@@ -419,6 +440,11 @@ namespace gl{
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+            //if we have mip map levels we have to clear also the lower levels
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
+
         }
 
         void set_val(const float r, const float g, const float b, const float alpha){
@@ -429,6 +455,11 @@ namespace gl{
             glClearColor(r, g, b, alpha);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+            //if we have mip map levels we have to clear also the lower levels
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
 
         }
 
@@ -468,12 +499,23 @@ namespace gl{
         }
 
         void generate_mipmap(const int idx_max_lvl){
-            glActiveTexture(GL_TEXTURE0);
-            bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_MAX_LEVEL, idx_max_lvl);
-            glGenerateMipmap(GL_TEXTURE_2D);
+            if(idx_max_lvl!=0){
+                glActiveTexture(GL_TEXTURE0);
+                bind();
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_MAX_LEVEL, idx_max_lvl);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                m_idx_mipmap_allocated=idx_max_lvl;
+            }
+
+            // // generate mip map allocates memory so therefore the framebuffer needs to be updated 
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+            // clear();
         }
 
         //creates the full chain of mip map, up until the smallest possible texture
@@ -565,6 +607,7 @@ namespace gl{
         GLint m_internal_format;
         GLenum m_format;
         GLenum m_type;
+        int m_idx_mipmap_allocated; //the index of the maximum mip_map level allocated. It starts at 0 for the case when we have only the base level texture
 
         //pbos for uploading data into the texture
         int m_nr_pbos_upload;
