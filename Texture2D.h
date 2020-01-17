@@ -417,6 +417,11 @@ namespace gl{
         void set_constant(float val){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            // GLenum draw_buffers[1];
+            // // draw_buffers[0]=GL_COLOR_ATTACHMENT0+0;
+            // glDrawBuffers(1, draw_buffers);
             
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
             glClearColor(val, val, val, val);
@@ -590,6 +595,7 @@ namespace gl{
         int mipmap_highest_idx() const { return floor(log2(  std::max(m_width, m_height)  ));  }
         //return maximum number of mip map lvls, effectivelly it is mipmap_highest_idx+1
         int mipmap_nr_lvls() const{ return mipmap_highest_idx()+1; }
+        int mipmap_nr_levels_allocated() const{ return m_idx_mipmap_allocated;}
 
 
     private:
