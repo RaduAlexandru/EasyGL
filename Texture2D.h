@@ -418,12 +418,16 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
 
-            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
-            // GLenum draw_buffers[1];
-            // // draw_buffers[0]=GL_COLOR_ATTACHMENT0+0;
-            // glDrawBuffers(1, draw_buffers);
+
             
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            GLenum draw_buffers[1];
+            draw_buffers[0]=GL_COLOR_ATTACHMENT0+0;
+            glDrawBuffers(1, draw_buffers);
+
+
             glClearColor(val, val, val, val);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -441,6 +445,12 @@ namespace gl{
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            GLenum draw_buffers[1];
+            draw_buffers[0]=GL_COLOR_ATTACHMENT0+0;
+            glDrawBuffers(1, draw_buffers);
+
             glClearColor(val, val, val, val_alpha);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -457,6 +467,12 @@ namespace gl{
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+
+            //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
+            GLenum draw_buffers[1];
+            draw_buffers[0]=GL_COLOR_ATTACHMENT0+0;
+            glDrawBuffers(1, draw_buffers);
+
             glClearColor(r, g, b, alpha);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
