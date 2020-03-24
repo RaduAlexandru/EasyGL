@@ -482,7 +482,7 @@ namespace gl{
                 std::vector<GLchar> errorLog(maxLength);
                 glGetShaderInfoLog(s, maxLength, &maxLength, &errorLog[0]);
 
-                LOG(ERROR) << named("Error: compiling shader") << std::endl << &errorLog[0];
+                LOG(ERROR) << named("Error: compiling shader") << std::endl << &errorLog[0] << "\n" << src;
 
                 // Provide the infolog in whatever manor you deem best.
                 // Exit with failure.
