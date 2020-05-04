@@ -173,7 +173,7 @@ inline std::ostream& operator<<(std::ostream& out, const GLMType& g)
 
 inline int gl_internal_format2cv_type(const GLint internal_format){
 
-    int cv_type;
+    int cv_type=0;
     switch ( internal_format ) {
         //the ones with uchar (They don't work for some reason... I think it has to be Just G_RGB and not GL_RGB8UI)
        case GL_R8UI: cv_type=CV_8UC1;  break;
