@@ -98,9 +98,9 @@ namespace gl{
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
             CHECK(is_type_valid(type)) << named("Type not valid");
-            
+
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
-            if( (format==GL_RGB || format==GL_BGR) && width%4!=0){
+            if( (format==GL_RGB || format==GL_BGR || format==GL_RED) && width%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
