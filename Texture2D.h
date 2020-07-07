@@ -94,6 +94,18 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
+        
+        void set_filter_mode_min(const GLenum filter_mode){
+            glBindTexture(GL_TEXTURE_2D, m_tex_id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
+        }
+
+        void set_filter_mode_mag(const GLenum filter_mode){
+            glBindTexture(GL_TEXTURE_2D, m_tex_id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
+        }
+        
+
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
             CHECK(is_format_valid(format)) << named("Format not valid");
