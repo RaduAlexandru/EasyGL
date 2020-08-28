@@ -52,6 +52,30 @@ inline Eigen::Matrix4f intrinsics_to_opengl_proj(const Eigen::Matrix3f& K, const
     return m;
 }
 
+inline Eigen::Matrix3f opengl_proj_to_intrinsics(const Eigen::Matrix4f& P, const int width, const int height){
+    //from https://fruty.io/2019/08/29/augmented-reality-with-opencv-and-opengl-the-tricky-projection-matrix/
+    
+    float fx,fy,cx,cy;
+
+    //the element (0,0) of the projection matrix is -2.0*fx/w, therefore fx=-(0,0)*w/2.0
+    fx=P(0,0)*width/2.0;
+    fy=P(1,1)*height/2.0;
+    
+    // the (0,2) element is X= 2*cx/w +1  SO 2*cx=(X-1)*w
+    cx=-(-P(0,2)-1)*width/2.0;
+    cy=-(-P(1,2)-1)*height/2.0;
+
+    Eigen::Matrix3f K;
+    K.setIdentity();
+    K(0,0)=fx;
+    K(1,1)=fy;
+    K(0,2)=cx;
+    K(1,2)=cy;
+
+
+    return K;
+}
+
 // OpenGL-error callback function
 // Used when GL_ARB_debug_output is supported
 inline void APIENTRY debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
