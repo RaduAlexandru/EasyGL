@@ -351,8 +351,15 @@ namespace gl{
                 draw_buffers[i]=GL_NONE; //initialize to gl_none
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
+            //make another framebuffer that points to the correct mip. We don't want to modify the tex.fbo_id() because that one already points to mip=0 and if we modify it here to point to another mip it might lead to weird effects afterwards
+            GLuint fbo;
+            glGenFramebuffers(1,&fbo);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }
@@ -372,8 +379,15 @@ namespace gl{
                 draw_buffers[i]=GL_NONE; //initialize to gl_none
             }
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); //attach to the framebuffer the correct face
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); //attach to the framebuffer the correct face
+            //make another framebuffer that points to the correct mip. We don't want to modify the tex.fbo_id() because that one already points to mip=0 and if we modify it here to point to another mip it might lead to weird effects afterwards
+            GLuint fbo;
+            glGenFramebuffers(1,&fbo);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); 
+            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+
             glDrawBuffers(nr_draw_buffers, draw_buffers);
         }
 
