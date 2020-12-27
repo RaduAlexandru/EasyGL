@@ -27,7 +27,8 @@ namespace gl{
             m_nr_pbos_upload(2),
             m_cur_pbo_upload_idx(0),
             m_nr_pbos_download(3),
-            m_cur_pbo_download_idx(0){
+            m_cur_pbo_download_idx(0),
+            m_fbos_for_mips(256, EGL_INVALID){
             glGenTextures(1,&m_tex_id);
 
             //create some pbos used for uploading to the texture
@@ -51,11 +52,15 @@ namespace gl{
             set_filter_mode_min_mag(GL_LINEAR);
             // set_filter_mode(GL_NEAREST);
 
-            glGenFramebuffers(1,&m_fbo_for_clearing_id);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
-            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            //framebuffers that points towards all the mip maps. We create only the FBO pointing at mipmap 0 and the other ones will be created dinamically when calling fbo_id( mip )
+            fbo_id(0);
+
+
+            // glGenFramebuffers(1,&m_fbo_for_clearing_id);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
         Texture2D(std::string name):
@@ -66,6 +71,14 @@ namespace gl{
         ~Texture2D(){
             // LOG(WARNING) << named("Destroying texture");
             glDeleteTextures(1, &m_tex_id);
+
+            for(size_t i=0; i<m_fbos_for_mips.size(); i++){
+                if (m_fbos_for_mips[i]!=EGL_INVALID){
+                    glDeleteFramebuffers(1, &m_fbos_for_mips[i]);
+                    m_fbos_for_mips[i]=EGL_INVALID;
+                }
+            }
+
         }
 
         //rule of five (make the class non copyable)   
@@ -432,7 +445,7 @@ namespace gl{
 
 
             
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
             GLenum draw_buffers[1];
@@ -456,7 +469,7 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
             GLenum draw_buffers[1];
@@ -478,7 +491,7 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
             GLenum draw_buffers[1];
@@ -585,8 +598,22 @@ namespace gl{
             return m_type;
         } 
 
-        GLuint fbo_id() const{
-            return m_fbo_for_clearing_id;
+        GLuint fbo_id(const int mip=0){
+
+            //check if the mip we are accesing is withing the range of mip maps we have allocated
+            CHECK(mip<mipmap_nr_levels_allocated()) << "mipmap idx " << mip << " is smaller than the nr of mips we have allocated which is " << mipmap_nr_levels_allocated();
+
+            //check if the fbo for this mip is created
+            if(m_fbos_for_mips[mip]==EGL_INVALID){ 
+                //the fbo is not created so we create it
+                glGenFramebuffers(1, &m_fbos_for_mips[mip] );
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbos_for_mips[mip]);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, mip);
+                glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            }
+
+            return m_fbos_for_mips[mip];
         }
 
 
@@ -623,7 +650,7 @@ namespace gl{
         int mipmap_highest_idx() const { return floor(log2(  std::max(m_width, m_height)  ));  }
         //return maximum number of mip map lvls, effectivelly it is mipmap_highest_idx+1
         int mipmap_nr_lvls() const{ return mipmap_highest_idx()+1; }
-        int mipmap_nr_levels_allocated() const{ return m_idx_mipmap_allocated;}
+        int mipmap_nr_levels_allocated() const{ return m_idx_mipmap_allocated+1;}
 
 
     private:
@@ -653,8 +680,8 @@ namespace gl{
         int m_cur_pbo_download_idx; //index into the pbo that we will use for downloading to cpu. It point at the pbo we will use for writing next time we call download_to_pbo. Also it is the one we use for reading when calling download_from_oldest_pbo() because this is the oldest one and the current one that will get overwritten if we were to write into it
         std::vector<gl::Buf> m_pbos_download;
 
-
-        GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
+        std::vector<GLuint> m_fbos_for_mips; //each fbo point to a mip map of this texture
+        // GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
 
     };
 }

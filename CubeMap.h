@@ -21,7 +21,9 @@ namespace gl{
             m_tex_storage_inmutable(false),
             m_internal_format(EGL_INVALID),
             m_format(EGL_INVALID),
-            m_type(EGL_INVALID){
+            m_type(EGL_INVALID),
+            m_idx_mipmap_allocated(0),
+            m_fbos_for_mips(256, EGL_INVALID){
             glGenTextures(1,&m_tex_id);
 
             //start with some sensible parameter initialziations
@@ -29,12 +31,15 @@ namespace gl{
             set_filter_mode_min_mag(GL_LINEAR);
             // set_filter_mode(GL_NEAREST);
 
+            //framebuffers that points towards all the mip maps. We create only the FBO pointing at mipmap 0 and the other ones will be created dinamically when calling fbo_id( mip )
+            fbo_id(0);
+
             //for clearing we use a framebuffer that will look through all of the 6 faces and clear them all https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/6.pbr/2.1.1.ibl_irradiance_conversion/ibl_irradiance_conversion.cpp
-            glGenFramebuffers(1,&m_fbo_for_clearing_id);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+0, m_tex_id, 0);
-            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            // glGenFramebuffers(1,&m_fbo_for_clearing_id);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+0, m_tex_id, 0);
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
         CubeMap(std::string name):
@@ -174,7 +179,7 @@ namespace gl{
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
             glClearColor(val, val, val, val);
             for(int i=0; i<6; i++){
                 glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_tex_id, 0);
@@ -182,19 +187,29 @@ namespace gl{
             }
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+            //if we have mip map levels we have to clear also the lower levels
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
+
         }
 
         void set_constant(float val, float val_alpha){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
             
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
             glClearColor(val, val, val, val_alpha);
             for(int i=0; i<6; i++){
                 glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_tex_id, 0);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             }
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+            //if we have mip map levels we have to clear also the lower levels
+            if(m_idx_mipmap_allocated!=0){
+                generate_mipmap(m_idx_mipmap_allocated);
+            }
 
         }
 
@@ -205,6 +220,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_CUBE_MAP,  GL_TEXTURE_MAX_LEVEL, idx_max_lvl);
             glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+            m_idx_mipmap_allocated=idx_max_lvl;
         }
 
         //creates the full chain of mip map, up until the smallest possible texture
@@ -231,8 +247,23 @@ namespace gl{
             return m_internal_format;
         }
 
-        GLuint fbo_id() const{
-            return m_fbo_for_clearing_id;
+        GLuint fbo_id(const int mip=0) {
+            // return m_fbo_for_clearing_id;
+             //check if the mip we are accesing is withing the range of mip maps we have allocated
+            CHECK(mip<mipmap_nr_levels_allocated()) << "mipmap idx " << mip << " is smaller than the nr of mips we have allocated which is " << mipmap_nr_levels_allocated();
+
+            //check if the fbo for this mip is created
+            if(m_fbos_for_mips[mip]==EGL_INVALID){ 
+                //the fbo is not created so we create it
+                glGenFramebuffers(1,&m_fbos_for_mips[mip]);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbos_for_mips[mip]);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+0, m_tex_id, mip);
+                glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+            }
+
+            return m_fbos_for_mips[mip];
         }
 
 
@@ -255,6 +286,7 @@ namespace gl{
         int mipmap_highest_idx() const { return floor(log2(  std::max(m_width, m_height)  ));  }
         //return maximum number of mip map lvls, effectivelly it is mipmap_highest_idx+1
         int mipmap_nr_lvls() const{ return mipmap_highest_idx()+1; }
+        int mipmap_nr_levels_allocated() const{ return m_idx_mipmap_allocated+1;}
 
 
     private:
@@ -274,8 +306,10 @@ namespace gl{
         GLint m_internal_format;
         GLenum m_format;
         GLenum m_type;
+        int m_idx_mipmap_allocated; //the index of the maximum mip_map level allocated. It starts at 0 for the case when we have only the base level texture
 
-        GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
+        std::vector<GLuint> m_fbos_for_mips; //each fbo point to a mip map of this texture
+        // GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
 
     };
 }

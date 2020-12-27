@@ -337,7 +337,7 @@ namespace gl{
 
 
         //draw into just one texture, which is not assigned to a gbuffer 
-        void draw_into(const Texture2D& tex, const std::string frag_out_name, const int mip=0){
+        void draw_into(Texture2D& tex, const std::string frag_out_name, const int mip=0){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
 
@@ -353,19 +353,26 @@ namespace gl{
             draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0; //the texture is only assigned as color0 for its fbo
             // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id());
             // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
+
             //make another framebuffer that points to the correct mip. We don't want to modify the tex.fbo_id() because that one already points to mip=0 and if we modify it here to point to another mip it might lead to weird effects afterwards
-            GLuint fbo;
-            glGenFramebuffers(1,&fbo);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+            // GLuint fbo;
+            // glGenFramebuffers(1,&fbo);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            // VLOG(1) << "fbo is " << (int)fbo;
+
+
+            //attempt 2
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id(mip));
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.tex_id(), mip);
-            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
 
             glDrawBuffers(nr_draw_buffers, draw_buffers);
 
         }
 
         //draw into one of the faces of a cubemap
-        void draw_into(const CubeMap& tex, const std::string frag_out_name, const int cube_face_idx, const int mip=0){
+        void draw_into(CubeMap& tex, const std::string frag_out_name, const int cube_face_idx, const int mip=0){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
 
@@ -382,11 +389,14 @@ namespace gl{
             // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id()); //bindframbuffer
             // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); //attach to the framebuffer the correct face
             //make another framebuffer that points to the correct mip. We don't want to modify the tex.fbo_id() because that one already points to mip=0 and if we modify it here to point to another mip it might lead to weird effects afterwards
-            GLuint fbo;
-            glGenFramebuffers(1,&fbo);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); 
-            glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+            // GLuint fbo;
+            // glGenFramebuffers(1,&fbo);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); 
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
+
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id(mip));
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip);
 
             glDrawBuffers(nr_draw_buffers, draw_buffers);
         }
