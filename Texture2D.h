@@ -28,7 +28,7 @@ namespace gl{
             m_cur_pbo_upload_idx(0),
             m_nr_pbos_download(3),
             m_cur_pbo_download_idx(0),
-            m_fbos_for_mips(256, EGL_INVALID){
+            m_fbos_for_mips(16, EGL_INVALID){
             glGenTextures(1,&m_tex_id);
 
             //create some pbos used for uploading to the texture

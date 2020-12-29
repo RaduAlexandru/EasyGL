@@ -23,7 +23,7 @@ namespace gl{
             m_format(EGL_INVALID),
             m_type(EGL_INVALID),
             m_idx_mipmap_allocated(0),
-            m_fbos_for_mips(256, EGL_INVALID){
+            m_fbos_for_mips(16, EGL_INVALID){
             glGenTextures(1,&m_tex_id);
 
             //start with some sensible parameter initialziations
