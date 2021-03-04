@@ -32,10 +32,11 @@ namespace gl{
             m_nr_image_units_used(0)
             {
                 //when we bind a texture we use up a texture unit. We check that we don't go above this value
-                glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_max_allowed_texture_units);
+                GL_C(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_max_allowed_texture_units));
 
                 //when we bind a image we use up a image unit. We check that we don't go above this value
-                glGetIntegerv(GL_MAX_IMAGE_UNITS, &m_max_allowed_image_units);
+                //GL_C(glGetIntegerv(GL_MAX_IMAGE_UNITS, &m_max_allowed_image_units));
+		m_max_allowed_image_units=8; //for soem reason the GL_MAX_IMAGE_UNITS is not defined in opengl3 evne if I included the glad with the image_load_store extensions. Either way, I just set the maximum to 8 which is the minimum that Opengl will require to have
         }
 
         Shader(const std::string name):
