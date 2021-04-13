@@ -292,7 +292,8 @@ namespace gl{
         }
 
         //output2tex_list is a list of pair which map from the output of a shader to the corresponding name of the texture that we want to write into. 
-        void draw_into(const GBuffer& gbuffer, std::initializer_list<  std::pair<std::string, std::string> > output2tex_list){
+        // void draw_into(const GBuffer& gbuffer, std::initializer_list<  std::pair<std::string, std::string> > output2tex_list){
+        void draw_into(const GBuffer& gbuffer, std::vector<  std::pair<std::string, std::string> > output2tex_list){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
 
