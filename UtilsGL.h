@@ -201,19 +201,22 @@ inline int gl_internal_format2cv_type(const GLint internal_format){
     switch ( internal_format ) {
         //the ones with uchar (They don't work for some reason... I think it has to be Just G_RGB and not GL_RGB8UI)
        case GL_R8UI: cv_type=CV_8UC1;  break;
+       case GL_RG8UI: cv_type=CV_8UC2; break;
        case GL_RGB8UI: cv_type=CV_8UC3; break;
        case GL_RGBA8UI: cv_type=CV_8UC4; break;
 
        case GL_R8: cv_type=CV_8UC1;  break;
+       case GL_RG8: cv_type=CV_8UC2; break;
        case GL_RGB8: cv_type=CV_8UC3; break;
        case GL_RGBA8: cv_type=CV_8UC4; break;
 
        //the ones with float
        case GL_R32F: cv_type=CV_32FC1;  break;
+       case GL_RG32F: cv_type=CV_32FC2;  break;
        case GL_RGB32F: cv_type=CV_32FC3;  break;
        case GL_RGBA32F: cv_type=CV_32FC4;  break;
        //print the internal forma tin hex because the glad.h header stores them like that so it'seasy to look up
-       default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 3 and 4 channels"; break;
+       default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 2, 3 and 4 channels"; break;
     }
 
     return cv_type;
