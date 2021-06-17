@@ -8,13 +8,13 @@
 #include "UtilsGL.h"
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647 
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class CubeMap{
     public:
         CubeMap():
-            m_width(0), 
+            m_width(0),
             m_height(0),
             m_tex_id(EGL_INVALID),
             m_tex_storage_initialized(false),
@@ -52,7 +52,7 @@ namespace gl{
             glDeleteTextures(1, &m_tex_id);
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         CubeMap(const CubeMap& other) = delete; // copy ctor
         CubeMap& operator=(const CubeMap& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -88,11 +88,11 @@ namespace gl{
         void set_filter_mode_mag(const GLenum filter_mode){
             glBindTexture(GL_TEXTURE_CUBE_MAP, m_tex_id);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, filter_mode);
-        } 
-        
+        }
+
 
         void resize(const int w, const int h){
-            LOG_IF(FATAL, w==0 && h==0) << named("Resizing texture with 0 size width and height is invalid."); 
+            LOG_IF(FATAL, w==0 && h==0) << named("Resizing texture with 0 size width and height is invalid.");
             CHECK(m_internal_format!=EGL_INVALID) << named("Cannot resize without knowing the internal format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_format!=EGL_INVALID) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_type!=EGL_INVALID) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
@@ -122,7 +122,7 @@ namespace gl{
 
             // bind the texture
             glBindTexture(GL_TEXTURE_CUBE_MAP, m_tex_id);
-        
+
             for(int i=0; i<6; i++){
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, m_internal_format, width, height, 0, m_format, m_type, 0);
             }
@@ -156,11 +156,11 @@ namespace gl{
             CHECK(is_type_valid(type)) << named("Type not valid");
 
             if(!m_tex_storage_initialized){
-                allocate_tex_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it 
+                allocate_tex_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it
             }else if(m_tex_storage_initialized && (m_width!=width || m_height!=height ) ){
                 resize( width, height ); // initialized but the texture changed size and we have to resize the buffer
             }
-        } 
+        }
 
         //clears the texture to zero
         void clear(){
@@ -178,7 +178,7 @@ namespace gl{
         void set_constant(float val){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
-            
+
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
             glClearColor(val, val, val, val);
             for(int i=0; i<6; i++){
@@ -197,7 +197,7 @@ namespace gl{
         void set_constant(float val, float val_alpha){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
-            
+
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
             glClearColor(val, val, val, val_alpha);
             for(int i=0; i<6; i++){
@@ -253,7 +253,7 @@ namespace gl{
             CHECK(mip<mipmap_nr_levels_allocated()) << "mipmap idx " << mip << " is smaller than the nr of mips we have allocated which is " << mipmap_nr_levels_allocated();
 
             //check if the fbo for this mip is created
-            if(m_fbos_for_mips[mip]==EGL_INVALID){ 
+            if(m_fbos_for_mips[mip]==EGL_INVALID){
                 //the fbo is not created so we create it
                 glGenFramebuffers(1,&m_fbos_for_mips[mip]);
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbos_for_mips[mip]);
@@ -294,7 +294,7 @@ namespace gl{
         int m_height;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 

@@ -23,7 +23,7 @@ namespace gl{
             glDeleteVertexArrays(1, &m_id);
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         VertexArrayObject(const VertexArrayObject& other) = delete; // copy ctor
         VertexArrayObject& operator=(const VertexArrayObject& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -58,18 +58,18 @@ namespace gl{
         }
 
 
-        
+
 
     private:
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 
 
         GLuint m_id;
 
-      
+
 
     };
 }

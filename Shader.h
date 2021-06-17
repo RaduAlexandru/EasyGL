@@ -19,7 +19,7 @@
 #include <Eigen/Core>
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647 
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class Shader{
@@ -50,7 +50,7 @@ namespace gl{
             glDeleteProgram(m_prog_id);
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         Shader(const Shader& other) = delete; // copy ctor
         Shader& operator=(const Shader& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -250,27 +250,27 @@ namespace gl{
             glUniform4fv(uniform_location, 1, vec.data());
         }
 
-        //sends an array of vec3 to the shader. Inside the shader we declare it as vec3 array[SIZE] where size must correspond to the one being sent 
+        //sends an array of vec3 to the shader. Inside the shader we declare it as vec3 array[SIZE] where size must correspond to the one being sent
         void uniform_array_v3_float(const Eigen::MatrixXf mat, const std::string uniform_name){
             CHECK(mat.cols()==3) << named("The matrix should have 3 columns because we expect a matrix with N rows and 3 columns for the vec3 array.");
-            for(int i=0; i<mat.rows(); i++){ 
+            for(int i=0; i<mat.rows(); i++){
                 std::string uniform_array_name;
                 uniform_array_name=uniform_name+"["+std::to_string(i)+"]";
                 GLint uniform_location=get_uniform_location(uniform_array_name);
                 Eigen::Vector3f row=mat.row(i); //cannot use directly mat.row(i).data() because that seems to give us eroneous data, maybe because of column major storing
-                glUniform3fv(uniform_location, 1, row.data()); 
+                glUniform3fv(uniform_location, 1, row.data());
             }
         }
 
-        //sends an array of vec2 to the shader. Inside the shader we declare it as vec2 array[SIZE] where size must correspond to the one being sent 
+        //sends an array of vec2 to the shader. Inside the shader we declare it as vec2 array[SIZE] where size must correspond to the one being sent
         void uniform_array_v2_float(const Eigen::MatrixXf mat, const std::string uniform_name){
             CHECK(mat.cols()==2) << named("The matrix should have 2 columns because we expect a matrix with N rows and 2 columns for the vec3 array.");
-            for(int i=0; i<mat.rows(); i++){ 
+            for(int i=0; i<mat.rows(); i++){
                 std::string uniform_array_name;
                 uniform_array_name=uniform_name+"["+std::to_string(i)+"]";
                 GLint uniform_location=get_uniform_location(uniform_array_name);
                 Eigen::Vector2f row=mat.row(i); //cannot use directly mat.row(i).data() because that seems to give us eroneous data, maybe because of column major storing
-                glUniform3fv(uniform_location, 1, row.data()); 
+                glUniform3fv(uniform_location, 1, row.data());
             }
         }
 
@@ -291,7 +291,7 @@ namespace gl{
             glMemoryBarrier(GL_ALL_BARRIER_BITS);
         }
 
-        //output2tex_list is a list of pair which map from the output of a shader to the corresponding name of the texture that we want to write into. 
+        //output2tex_list is a list of pair which map from the output of a shader to the corresponding name of the texture that we want to write into.
         // void draw_into(const GBuffer& gbuffer, std::initializer_list<  std::pair<std::string, std::string> > output2tex_list){
         void draw_into(const GBuffer& gbuffer, std::vector<  std::pair<std::string, std::string> > output2tex_list){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
@@ -299,9 +299,9 @@ namespace gl{
 
             int max_location=-1; //will be used to determine how many drawbuffers should be used by seeing how many outputs does the fragment shader actually use
             for(auto output2tex : output2tex_list){
-                std::string frag_out_name=output2tex.first; 
+                std::string frag_out_name=output2tex.first;
                 int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
-                std::string tex_name=output2tex.second; 
+                std::string tex_name=output2tex.second;
                 // int attachment_nr=gbuffer.attachment_nr(tex_name);
                 LOG_IF(WARNING, frag_out_location==-1) << named("Fragment output location for name " + frag_out_name + " is either not declared in the shader or not being used for outputting anything.");
                 // std::cout << frag_out_name << " with location " << frag_out_location <<  " will write into " << tex_name << " with attachment nr" << attachment_nr << '\n';
@@ -316,11 +316,11 @@ namespace gl{
                 draw_buffers[i]=GL_NONE; //initialize to gl_none
             }
 
-            //fill the draw buffers 
+            //fill the draw buffers
              for(auto output2tex : output2tex_list){
-                std::string frag_out_name=output2tex.first; 
+                std::string frag_out_name=output2tex.first;
                 int frag_out_location=glGetFragDataLocation(m_prog_id, frag_out_name.data());
-                std::string tex_name=output2tex.second; 
+                std::string tex_name=output2tex.second;
                 int attachment_nr=gbuffer.attachment_nr(tex_name);
 
                 draw_buffers[frag_out_location]=GL_COLOR_ATTACHMENT0+attachment_nr;
@@ -329,7 +329,7 @@ namespace gl{
                 // std::cout << "frag_out_location" << frag_out_location << "set to attachment" << attachment_nr << '\n';
             }
 
-            // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into 
+            // tthe layout qualifers inside the shader index into this gluenum array and say for each output where do we write into
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gbuffer.get_fbo_id());
             // glClearColor(0.0, 0.0, 0.0, 0.0);
             // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -338,7 +338,7 @@ namespace gl{
         }
 
 
-        //draw into just one texture, which is not assigned to a gbuffer 
+        //draw into just one texture, which is not assigned to a gbuffer
         void draw_into(Texture2D& tex, const std::string frag_out_name, const int mip=0){
             CHECK(!m_is_compute_shader) << named("Program is a compute shader so we use to draw into gbuffer. Please use a fragment shader.");
 
@@ -394,7 +394,7 @@ namespace gl{
             // GLuint fbo;
             // glGenFramebuffers(1,&fbo);
             // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip); 
+            // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube_face_idx, tex.tex_id(), mip);
             // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tex.fbo_id(mip));
@@ -407,14 +407,14 @@ namespace gl{
         int get_prog_id() const{
             return m_prog_id;
         }
-        
+
         GLint get_uniform_location(std::string uniform_name){
             this->use();
             GLint uniform_location=glGetUniformLocation(m_prog_id,uniform_name.c_str());
             LOG_IF(WARNING,uniform_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
             return uniform_location;
         }
-        
+
 
     private:
         std::string m_name;
@@ -430,8 +430,8 @@ namespace gl{
         std::unordered_map<std::string, int > image2image_units;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
-        } 
+            return m_name.empty()? msg : m_name + ": " + msg;
+        }
 
 
         //for compute shaders
@@ -548,25 +548,25 @@ namespace gl{
         //     allowed_internal_formats.push_back(GL_RG16_SNORM);
         //     allowed_internal_formats.push_back(GL_RG8_SNORM);
         //     allowed_internal_formats.push_back(GL_R16_SNORM);
-        //     allowed_internal_formats.push_back(GL_RGBA32UI);	
-        //     allowed_internal_formats.push_back(GL_RGBA16UI);	
-        //     allowed_internal_formats.push_back(GL_RGB10_A2UI); 	
-        //     allowed_internal_formats.push_back(GL_RGBA8UI); 	
-        //     allowed_internal_formats.push_back(GL_RG32UI); 	
-        //     allowed_internal_formats.push_back(GL_RG16UI); 	
-        //     allowed_internal_formats.push_back(GL_RG8UI); 	
-        //     allowed_internal_formats.push_back(GL_R32UI); 
-        //     allowed_internal_formats.push_back(GL_R16UI); 	
-        //     allowed_internal_formats.push_back(GL_R8UI); 	
-        //     allowed_internal_formats.push_back(GL_RGBA32I); 
-        //     allowed_internal_formats.push_back(GL_RGBA16I); 
-        //     allowed_internal_formats.push_back(GL_RGBA8I); 	
-        //     allowed_internal_formats.push_back(GL_RG32I); 	
-        //     allowed_internal_formats.push_back(GL_RG16I); 	
-        //     allowed_internal_formats.push_back(GL_RG8I); 	
-        //     allowed_internal_formats.push_back(GL_R32I); 	
-        //     allowed_internal_formats.push_back(GL_R16I); 	
-        //     allowed_internal_formats.push_back(GL_R8I); 	
+        //     allowed_internal_formats.push_back(GL_RGBA32UI);
+        //     allowed_internal_formats.push_back(GL_RGBA16UI);
+        //     allowed_internal_formats.push_back(GL_RGB10_A2UI);
+        //     allowed_internal_formats.push_back(GL_RGBA8UI);
+        //     allowed_internal_formats.push_back(GL_RG32UI);
+        //     allowed_internal_formats.push_back(GL_RG16UI);
+        //     allowed_internal_formats.push_back(GL_RG8UI);
+        //     allowed_internal_formats.push_back(GL_R32UI);
+        //     allowed_internal_formats.push_back(GL_R16UI);
+        //     allowed_internal_formats.push_back(GL_R8UI);
+        //     allowed_internal_formats.push_back(GL_RGBA32I);
+        //     allowed_internal_formats.push_back(GL_RGBA16I);
+        //     allowed_internal_formats.push_back(GL_RGBA8I);
+        //     allowed_internal_formats.push_back(GL_RG32I);
+        //     allowed_internal_formats.push_back(GL_RG16I);
+        //     allowed_internal_formats.push_back(GL_RG8I);
+        //     allowed_internal_formats.push_back(GL_R32I);
+        //     allowed_internal_formats.push_back(GL_R16I);
+        //     allowed_internal_formats.push_back(GL_R8I);
 
         //     //check that we are a valid one
         //     for (size_t i = 0; i < allowed_internal_formats.size(); i++) {

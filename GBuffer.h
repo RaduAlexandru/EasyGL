@@ -4,11 +4,11 @@
 #include <Texture2D.h>
 
 
-#define MAX_TEXTURES 8 
+#define MAX_TEXTURES 8
 
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647  
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class GBuffer{
@@ -38,7 +38,7 @@ namespace gl{
             glDeleteFramebuffers(1, &m_fbo_id);
         }
 
-        // rule of five (make the class non copyable)   
+        // rule of five (make the class non copyable)
         GBuffer(const GBuffer& other) = delete; // copy ctor
         GBuffer& operator=(const GBuffer& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -49,7 +49,7 @@ namespace gl{
         void add_texture(const std::string name, GLint internal_format, GLenum format, GLenum type){
             LOG_IF(FATAL, (int)m_textures.size()>= m_max_color_attachments-1  ) << named( name + " could not be added. Added to many textures. This will cause the vector to be dinamically resized and therefore move and destruct some of the textures. Please increase the MAX_TEXTURES #define inside the GBuffer class");
 
-            m_textures.emplace_back(name); 
+            m_textures.emplace_back(name);
 
             if(m_width!=0 && m_height!=0) { //we already used set_size() so we have some size for the whole gbuffer so we can already allocate using a certain size
                 m_textures.back().allocate_storage(internal_format, format, type, m_width, m_height );
@@ -57,7 +57,7 @@ namespace gl{
                 m_textures.back().allocate_storage(internal_format, format, type, 0, 0);
             }
 
-            //add this new texture as an attachment to the framebuffer 
+            //add this new texture as an attachment to the framebuffer
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + m_textures.size()-1, GL_TEXTURE_2D, m_textures.back().tex_id(), 0);
             m_texname2attachment[name]=m_textures.size()-1;
@@ -74,11 +74,11 @@ namespace gl{
                  m_depth_tex.allocate_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //for more precise depth which translates in more precise shading because we reconstruct the position based on the depth
                 // m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT, m_width, m_height); //we do't really need the stencil but it's nice to hace a fully 4 byte aligned texture
             }else{
-                 m_depth_tex.allocate_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, 0, 0); 
+                 m_depth_tex.allocate_storage(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, 0, 0);
                 // m_depth_tex.allocate_tex_storage(GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT, GL_FLOAT,0,0);
             }
 
-            //add this new texture as an attachment to the framebuffer 
+            //add this new texture as an attachment to the framebuffer
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth_tex.tex_id(), 0);
 
@@ -116,15 +116,15 @@ namespace gl{
             m_width=w;
             m_height=h;
 
-            //resize the sizes of all texures that don't have the same size 
+            //resize the sizes of all texures that don't have the same size
             for(size_t i=0; i<m_textures.size(); i++){
                 if(m_textures[i].width()!=w || m_textures[i].height()!=h ){
                     m_textures[i].resize(w,h);
-                }    
+                }
             }
-        
+
             //resize also the depth
-            if(  m_has_depth_tex && (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.storage_initialized() ){ 
+            if(  m_has_depth_tex && (m_depth_tex.width()!=w || m_depth_tex.height()!=h) && m_depth_tex.storage_initialized() ){
                 m_depth_tex.resize(w,h);
             }
 
@@ -137,7 +137,7 @@ namespace gl{
         void bind_for_draw() const{
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_id);
         }
-        
+
         void bind_for_read() const{
             glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo_id);
         }
@@ -208,7 +208,7 @@ namespace gl{
         int attachment_nr(const std::string tex_name) const{
             auto it = m_texname2attachment.find(tex_name);
             if(it != std::end(m_texname2attachment)){
-                //found 
+                //found
                 return it->second;
             }else{
                 LOG(FATAL) << named("Texture with name: "+tex_name + " is not added to this gbuffer");
@@ -246,7 +246,7 @@ namespace gl{
         int m_height;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 

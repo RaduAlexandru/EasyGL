@@ -54,13 +54,13 @@ inline Eigen::Matrix4f intrinsics_to_opengl_proj(const Eigen::Matrix3f& K, const
 
 inline Eigen::Matrix3f opengl_proj_to_intrinsics(const Eigen::Matrix4f& P, const int width, const int height){
     //from https://fruty.io/2019/08/29/augmented-reality-with-opencv-and-opengl-the-tricky-projection-matrix/
-    
+
     float fx,fy,cx,cy;
 
     //the element (0,0) of the projection matrix is -2.0*fx/w, therefore fx=-(0,0)*w/2.0
     fx=P(0,0)*width/2.0;
     fy=P(1,1)*height/2.0;
-    
+
     // the (0,2) element is X= 2*cx/w +1  SO 2*cx=(X-1)*w
     cx=-(-P(0,2)-1)*width/2.0;
     cy=-(-P(1,2)-1)*height/2.0;
@@ -242,7 +242,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                    }else{
                        format=GL_RGB;
                    }
-                   break; 
+                   break;
            case 4:
                    internal_format=GL_RGBA8;
                    if(flip_red_blue){
@@ -258,7 +258,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
         switch ( channels ) {
            case 1: internal_format=GL_R8UI; format=GL_RED_INTEGER;  break;
            case 2: internal_format=GL_RG8UI; format=GL_RG_INTEGER;  break;
-           case 3: 
+           case 3:
                     internal_format=GL_RGB8UI;
                     if(flip_red_blue){
                         format=GL_BGR_INTEGER;
@@ -274,7 +274,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                         format=GL_RGBA_INTEGER;
                     }
                     break;
-           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break; 
+           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;
         }
     }
     else if(depth==CV_32F){
@@ -289,7 +289,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                     }else{
                         format=GL_RGB;
                     }
-                    break; 
+                    break;
            case 4:
                     internal_format=GL_RGBA32F;
                     if(flip_red_blue){
@@ -298,7 +298,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
                         format=GL_RGBA;
                     }
                     break;
-           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;  
+           default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;
         }
     }else{
         LOG(FATAL) << "CV mat is only supported for types of unsigned byte and float. Check the depth of your cv mat";
@@ -541,5 +541,3 @@ inline bool is_internal_format_valid_for_image_bind(const GLenum internal_format
 
     return false;
 }
-
-

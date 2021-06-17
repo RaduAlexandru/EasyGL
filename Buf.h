@@ -6,7 +6,7 @@
 #include <cstring> //memcpy
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647  
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class Buf{
@@ -37,7 +37,7 @@ namespace gl{
             glDeleteBuffers(1, &m_buf_id);
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         Buf(const Buf& other) = delete; // copy ctor
         Buf& operator=(const Buf& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -73,7 +73,7 @@ namespace gl{
         void allocate_storage(const GLsizei size_bytes, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
-            if(size_bytes==0) return; 
+            if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, size_bytes, NULL, usage_hints);
@@ -85,7 +85,7 @@ namespace gl{
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
-            if(size_bytes==0) return; 
+            if(size_bytes==0) return;
 
             glBindBuffer(target, m_buf_id);
             glBufferData(target, size_bytes, data_ptr, usage_hints);
@@ -100,7 +100,7 @@ namespace gl{
         void upload_data(const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
-            if(size_bytes==0) return; 
+            if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, size_bytes, data_ptr, usage_hints);
@@ -116,7 +116,7 @@ namespace gl{
             if(m_buf_is_inmutable) LOG(FATAL) << named("Storage is inmutable so you cannot use glBufferData. You need to use glBufferStorage");
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             if(m_usage_hints==EGL_INVALID) LOG(FATAL) << named("Usage hints have not been assigned. They will get assign by using upload_data.");
-            if(size_bytes==0) return; 
+            if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
             glBufferData(m_target, size_bytes, data_ptr, m_usage_hints);
@@ -257,7 +257,7 @@ namespace gl{
         int m_depth;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 

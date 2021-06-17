@@ -4,7 +4,7 @@
 #include <iostream>
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647 
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class Texture2DArray{
@@ -42,7 +42,7 @@ namespace gl{
             glDeleteBuffers(m_nr_pbos, m_pbo_ids.data());
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         Texture2DArray(const Texture2DArray& other) = delete; // copy ctor
         Texture2DArray& operator=(const Texture2DArray& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -223,7 +223,7 @@ namespace gl{
         int m_depth;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 

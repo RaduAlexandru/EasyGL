@@ -9,7 +9,7 @@
 #include "Buf.h"
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
-#define EGL_INVALID 2147483647 
+#define EGL_INVALID 2147483647
 
 namespace gl{
     class Texture2D{
@@ -81,7 +81,7 @@ namespace gl{
 
         }
 
-        //rule of five (make the class non copyable)   
+        //rule of five (make the class non copyable)
         Texture2D(const Texture2D& other) = delete; // copy ctor
         Texture2D& operator=(const Texture2D& other) = delete; // assignment op
         // Use default move ctors.  You have to declare these, otherwise the class will not have automatically generated move ctors.
@@ -107,7 +107,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
-        
+
         void set_filter_mode_min(const GLenum filter_mode){
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
@@ -117,7 +117,7 @@ namespace gl{
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
-        
+
 
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
@@ -129,7 +129,7 @@ namespace gl{
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
-            
+
             // bind the texture and PBO
             GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
             Buf& pbo_upload=m_pbos_upload[m_cur_pbo_upload_idx];
@@ -211,7 +211,7 @@ namespace gl{
         // }
 
         void resize(const int w, const int h){
-            LOG_IF(FATAL, w==0 && h==0) << named("Resizing texture with 0 size width and height is invalid."); 
+            LOG_IF(FATAL, w==0 && h==0) << named("Resizing texture with 0 size width and height is invalid.");
             CHECK(m_internal_format!=EGL_INVALID) << named("Cannot resize without knowing the internal format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_format!=EGL_INVALID) << named("Cannot resize without knowing the format. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
             CHECK(m_type!=EGL_INVALID) << named("Cannot resize without knowing the texture type. You should previously allocate storage for the texture using allocate_texture_storage or upload_data if you have any");
@@ -244,7 +244,7 @@ namespace gl{
 
             // bind the texture
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
-        
+
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
             m_tex_storage_initialized=true;
 
@@ -279,11 +279,11 @@ namespace gl{
             CHECK(is_type_valid(type)) << named("Type not valid");
 
             if(!m_tex_storage_initialized){
-                allocate_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it 
+                allocate_storage(internal_format, format, type, width, height ); //never initialized so we allocate some storage for it
             }else if(m_tex_storage_initialized && (m_width!=width || m_height!=height ) ){
                 resize( width, height ); // initialized but the texture changed size and we have to resize the buffer
             }
-        } 
+        }
 
         // //uploads data from cpu to pbo (on gpu) will take some cpu time to perform the memcpy
         // void upload_to_pbo(const void* data_ptr, int size_bytes){
@@ -329,7 +329,7 @@ namespace gl{
         // void upload_pbo_to_tex_no_binds( GLsizei width, GLsizei height,
         //                                  GLenum format, GLenum type){
 
-        //     //TODO needs some refactoring to not take as parameters the width and the height and the format type and so one, we should have a function that just takes the width height and format type from the class member is they are available, if they are not they should be set 
+        //     //TODO needs some refactoring to not take as parameters the width and the height and the format type and so one, we should have a function that just takes the width height and format type from the class member is they are available, if they are not they should be set
 
         //     // copy pixels from PBO to texture object (this returns inmediatelly and lets the GPU perform DMA at a later time)
         //     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, 0);
@@ -366,13 +366,13 @@ namespace gl{
         //transfers data from the texture into a pbo. Useful for later reading the pbo with download_from_oldest_pbo() and transfering to cpu without stalling the pipeline
         void download_to_pbo(){
             CHECK(storage_initialized()) << named("Texture storage not initialized");
-            
+
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
             if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
-            
+
             // bind the texture and PBO
             GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
             Buf& pbo_download=m_pbos_download[m_cur_pbo_download_idx];
@@ -389,7 +389,7 @@ namespace gl{
 
             //transfer from texture to pbo
             glGetTexImage(GL_TEXTURE_2D, 0, m_format, m_type, 0);
-           
+
 
             // it is good idea to release PBOs with ID 0 after use. Once bound with 0, all pixel operations behave normal ways.
             GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
@@ -403,7 +403,7 @@ namespace gl{
             if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
-            
+
             // bind the PBO and copy the dtaa from it
             Buf& pbo_download=m_pbos_download[m_cur_pbo_download_idx];
             if(pbo_download.storage_initialized()){
@@ -444,7 +444,7 @@ namespace gl{
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
 
 
-            
+
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
@@ -461,14 +461,14 @@ namespace gl{
             if(m_idx_mipmap_allocated!=0){
                 generate_mipmap(m_idx_mipmap_allocated);
             }
-            
+
 
         }
 
         void set_constant(float val, float val_alpha){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
-            
+
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
@@ -490,7 +490,7 @@ namespace gl{
         void set_val(const float r, const float g, const float b, const float alpha){
             CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
             CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
-            
+
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id(0) );
 
             //glClear only clears the active draw color buffers specified by glDrawBuffers https://stackoverflow.com/a/18029493
@@ -555,7 +555,7 @@ namespace gl{
                 m_idx_mipmap_allocated=idx_max_lvl;
             }
 
-            // // generate mip map allocates memory so therefore the framebuffer needs to be updated 
+            // // generate mip map allocates memory so therefore the framebuffer needs to be updated
             // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
             // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_tex_id, 0);
             // glDrawBuffer(GL_COLOR_ATTACHMENT0); //Only need to do this once.
@@ -596,7 +596,7 @@ namespace gl{
         GLenum type() const{
             CHECK(m_type!=EGL_INVALID) << named("The texture has not been initialzied and doesn't yet have a type");
             return m_type;
-        } 
+        }
 
         GLuint fbo_id(const int mip=0){
 
@@ -604,7 +604,7 @@ namespace gl{
             CHECK(mip<mipmap_nr_levels_allocated()) << "mipmap idx " << mip << " is smaller than the nr of mips we have allocated which is " << mipmap_nr_levels_allocated();
 
             //check if the fbo for this mip is created
-            if(m_fbos_for_mips[mip]==EGL_INVALID){ 
+            if(m_fbos_for_mips[mip]==EGL_INVALID){
                 //the fbo is not created so we create it
                 glGenFramebuffers(1, &m_fbos_for_mips[mip] );
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbos_for_mips[mip]);
@@ -658,7 +658,7 @@ namespace gl{
         int m_height;
 
         std::string named(const std::string msg) const{
-            return m_name.empty()? msg : m_name + ": " + msg; 
+            return m_name.empty()? msg : m_name + ": " + msg;
         }
         std::string m_name;
 
