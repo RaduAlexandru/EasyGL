@@ -414,6 +414,9 @@ namespace gl{
             LOG_IF(WARNING,uniform_location==-1) << named("Uniform location for name ") << uniform_name << " is invalid. Are you sure you are using the uniform in the shader? Maybe you are also binding too many stuff.";
             return uniform_location;
         }
+        bool is_compiled(){
+            return m_is_compiled;
+        }
 
 
     private:
