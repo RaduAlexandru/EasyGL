@@ -521,7 +521,7 @@ namespace gl{
             CHECK(lvl>=0 && lvl<=mipmap_highest_idx()) << "Mip map must be in range [0,mipmap_highest_idx()]. So the max lvl idx is: " << mipmap_highest_idx() << " but the input lvl is" << lvl;
 
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
-            if( (m_format==GL_RGB || m_format==GL_BGR) && m_width%4!=0){
+            if( (m_format==GL_RGB || m_format==GL_BGR || m_format==GL_RED) && m_width%4!=0){
                 glPixelStorei(GL_PACK_ALIGNMENT, 1);
             }
 
@@ -540,6 +540,8 @@ namespace gl{
 
             //restore the packing alignment back to 4 as per default
             glPixelStorei(GL_PACK_ALIGNMENT, 4);
+
+            unbind();
 
             return cv_mat;
         }
@@ -573,6 +575,10 @@ namespace gl{
 
         void bind() const{
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
+        }
+
+        void unbind() const{
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         int tex_id() const{
