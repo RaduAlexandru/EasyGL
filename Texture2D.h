@@ -164,7 +164,7 @@ namespace gl{
 
 
             // it is good idea to release PBOs with ID 0 after use. Once bound with 0, all pixel operations behave normal ways.
-            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
+            pbo_upload.unbind();
 
             m_cur_pbo_upload_idx=(m_cur_pbo_upload_idx+1)%m_nr_pbos_upload;
 
@@ -368,13 +368,13 @@ namespace gl{
             CHECK(storage_initialized()) << named("Texture storage not initialized");
 
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
-            if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
+            if( (m_format==GL_RGB || m_format==GL_BGR || m_format==GL_RED) && width()%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
 
             // bind the texture and PBO
-            GL_C( glBindTexture(GL_TEXTURE_2D, m_tex_id) );
+            GL_C( bind() );
             Buf& pbo_download=m_pbos_download[m_cur_pbo_download_idx];
             pbo_download.bind();
 
@@ -392,15 +392,16 @@ namespace gl{
 
 
             // it is good idea to release PBOs with ID 0 after use. Once bound with 0, all pixel operations behave normal ways.
-            GL_C( glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0) );
+            pbo_download.unbind();
             m_cur_pbo_download_idx=(m_cur_pbo_download_idx+1)%m_nr_pbos_download;
             //change back to unpack alignment of 4 which would be the default in case we changed it before
             glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            unbind(); //unbind also the texture
         }
 
         void download_from_oldest_pbo(void* data_out){
             //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
-            if( (m_format==GL_RGB || m_format==GL_BGR) && width()%4!=0){
+            if( (m_format==GL_RGB || m_format==GL_BGR || m_format==GL_RED) && width()%4!=0){
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             }
 
@@ -412,7 +413,7 @@ namespace gl{
                 void* data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
                 memcpy(data_out, data, pbo_download.size_bytes());
                 glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0 );
+                pbo_download.unbind();
 
             }
 
@@ -525,6 +526,7 @@ namespace gl{
                 glPixelStorei(GL_PACK_ALIGNMENT, 1);
             }
 
+
             bind();
 
             //create the cv_mat and
@@ -542,6 +544,7 @@ namespace gl{
             glPixelStorei(GL_PACK_ALIGNMENT, 4);
 
             unbind();
+
 
             return cv_mat;
         }

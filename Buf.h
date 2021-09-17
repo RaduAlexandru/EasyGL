@@ -198,6 +198,11 @@ namespace gl{
             glBindBuffer( m_target, m_buf_id );
         }
 
+        void unbind() const{
+            if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
+            glBindBuffer( m_target, 0 );
+        }
+
         GLenum target() const {
             return m_target;
         }
