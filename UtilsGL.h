@@ -210,6 +210,11 @@ inline int gl_internal_format2cv_type(const GLint internal_format){
        case GL_RGB8: cv_type=CV_8UC3; break;
        case GL_RGBA8: cv_type=CV_8UC4; break;
 
+       case GL_R32I: cv_type=CV_32SC1;  break;
+       case GL_RG32I: cv_type=CV_32SC2;  break;
+       case GL_RGB32I: cv_type=CV_32SC3;  break;
+       case GL_RGBA32I: cv_type=CV_32SC4;  break;
+
        //the ones with float
        case GL_R32F: cv_type=CV_32FC1;  break;
        case GL_RG32F: cv_type=CV_32FC2;  break;
