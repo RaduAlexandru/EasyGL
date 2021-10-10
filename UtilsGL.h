@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef EASYPBR_WITH_TORCH
+    #include "torch/torch.h"
+#endif
+
 
 //eigen
 #include <Eigen/Dense>
@@ -311,6 +315,126 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 
 }
+
+#ifdef EASYPBR_WITH_TORCH
+
+    //given an internal format of the texture, return the appropriate channels and scalar type for the tensor
+    inline void gl_internal_format2tensor_type(int& nr_channels_tensor, torch::ScalarType& scalar_type_tensor, const GLint internal_format){
+
+        switch ( internal_format ) {
+            //the ones with uchar (They don't work for some reason... I think it has to be Just G_RGB and not GL_RGB8UI)
+        case GL_R8UI: nr_channels_tensor=1; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RG8UI: nr_channels_tensor=2; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RGB8UI: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RGBA8UI: nr_channels_tensor=4; scalar_type_tensor=torch::kUInt8;  break;
+
+        case GL_R8: nr_channels_tensor=1; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RG8: nr_channels_tensor=2; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RGB8: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
+        case GL_RGBA8: nr_channels_tensor=4; scalar_type_tensor=torch::kUInt8;  break;
+
+        case GL_R32I: nr_channels_tensor=1; scalar_type_tensor=torch::kInt32;  break;
+        case GL_RG32I: nr_channels_tensor=2; scalar_type_tensor=torch::kInt32;  break;
+        case GL_RGB32I: nr_channels_tensor=3; scalar_type_tensor=torch::kInt32;  break;
+        case GL_RGBA32I: nr_channels_tensor=4; scalar_type_tensor=torch::kInt32;  break;
+
+        //the ones with float
+        case GL_R32F: nr_channels_tensor=1; scalar_type_tensor=torch::kFloat32;  break;
+        case GL_RG32F: nr_channels_tensor=2; scalar_type_tensor=torch::kFloat32;  break;
+        case GL_RGB32F: nr_channels_tensor=3; scalar_type_tensor=torch::kFloat32;  break;
+        case GL_RGBA32F: nr_channels_tensor=4; scalar_type_tensor=torch::kFloat32;  break;
+        //print the internal forma tin hex because the glad.h header stores them like that so it'seasy to look up
+        default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 2, 3 and 4 channels"; break;
+        }
+
+    }
+
+    //from the tensor type get the approapraite gl internal format, format and type
+    inline void tensor_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& type, const int tensor_channels, const torch::ScalarType tensor_scalar_type, const bool flip_red_blue, const bool store_as_normalized_vals){
+
+
+        //from the tensor format get the corresponding gl internal_format, format and type
+        unsigned char channels = tensor_channels;
+
+        if(tensor_scalar_type==torch::kUInt8 && store_as_normalized_vals){
+            type=GL_UNSIGNED_BYTE;
+            switch ( channels ) {
+            case 1: internal_format=GL_R8; format=GL_RED;  break;
+            case 2: internal_format=GL_RG8; format=GL_RG;  break;
+            case 3:
+                    internal_format=GL_RGB8;
+                    if(flip_red_blue){
+                        format=GL_BGR;
+                    }else{
+                        format=GL_RGB;
+                    }
+                    break;
+            case 4:
+                    internal_format=GL_RGBA8;
+                    if(flip_red_blue){
+                        format=GL_BGRA;
+                    }else{
+                        format=GL_RGBA;
+                    }
+                    break;
+            default:  LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;
+            }
+        }else if(tensor_scalar_type==torch::kUInt8 && !store_as_normalized_vals){
+            type=GL_UNSIGNED_BYTE;
+            switch ( channels ) {
+            case 1: internal_format=GL_R8UI; format=GL_RED_INTEGER;  break;
+            case 2: internal_format=GL_RG8UI; format=GL_RG_INTEGER;  break;
+            case 3:
+                        internal_format=GL_RGB8UI;
+                        if(flip_red_blue){
+                            format=GL_BGR_INTEGER;
+                        }else{
+                            format=GL_RGB_INTEGER;
+                        }
+                        break;
+            case 4:
+                        internal_format=GL_RGBA8UI;
+                        if(flip_red_blue){
+                            format=GL_BGRA_INTEGER;
+                        }else{
+                            format=GL_RGBA_INTEGER;
+                        }
+                        break;
+            default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;
+            }
+        }
+        else if(tensor_scalar_type==torch::kFloat32){
+            type=GL_FLOAT;
+            switch ( channels ) {
+            case 1: internal_format=GL_R32F; format=GL_RED;  break;
+            case 2: internal_format=GL_RG32F; format=GL_RG;  break;
+            case 3:
+                        internal_format=GL_RGB32F;
+                        if(flip_red_blue){
+                            format=GL_BGR;
+                        }else{
+                            format=GL_RGB;
+                        }
+                        break;
+            case 4:
+                        internal_format=GL_RGBA32F;
+                        if(flip_red_blue){
+                            format=GL_BGRA;
+                        }else{
+                            format=GL_RGBA;
+                        }
+                        break;
+            default: LOG(FATAL) << "Nr of channels not supported. We only support 1, 2, 3 and 4."; break;
+            }
+        }else{
+            LOG(FATAL) << "CV mat is only supported for types of unsigned byte and float. Check the depth of your cv mat";
+        }
+
+
+    }
+#endif
+
+
 
 
 ///from the internal format of the GL representation get the possible type and format that was used for inputing data into that texture

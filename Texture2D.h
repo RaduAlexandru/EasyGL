@@ -1,12 +1,19 @@
 #pragma once
 #include <glad/glad.h>
 
+#ifdef EASYPBR_WITH_TORCH
+    #include "torch/torch.h"
+    #include <cuda_gl_interop.h>
+#endif
+
 #include <iostream>
 
 #include "opencv2/opencv.hpp"
 
 #include "UtilsGL.h"
 #include "Buf.h"
+
+
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
 #define EGL_INVALID 2147483647
@@ -549,6 +556,82 @@ namespace gl{
             return cv_mat;
         }
 
+        #ifdef EASYPBR_WITH_TORCH
+            void from_tensor(const torch::Tensor& tensor, const bool flip_red_blue=false, const bool store_as_normalized_vals=true){
+                //check that the tensor is in format nchw
+                CHECK(tensor.dim()==4 ) << "tensor should have 4 dimensions correponding to NCHW but it has " << tensor.dim();
+                CHECK(tensor.size(0)==1 ) << "tensor first dimension should be 1. So it should be only 1 batch but it is " << tensor.size(0);
+                CHECK(tensor.size(1)==1 || tensor.size(1)==2 || tensor.size(1)==3 || tensor.size(1)==4 ) << "tensor second dimension should be 1,2,3 or 4 but it is " << tensor.size(1);
+                CHECK(tensor.scalar_type()==torch::kFloat32 || tensor.scalar_type()==torch::kUInt8 || tensor.scalar_type()==torch::kInt32 ) << "Tensor should be of type float uint8 or int32. However it is " << tensor.scalar_type();
+                CHECK(tensor.device().is_cuda() ) << "tensor should be on the GPU but it is on device " << tensor.device();
+
+                int c=tensor.size(1);
+                int h=tensor.size(2);
+                int w=tensor.size(3);
+
+                //if the texture is already initialized, check if the types and sizes match
+                if(m_tex_storage_initialized){
+
+                }else{
+                    //we allocate a new texture with the corresponding size
+                    // allocate_storage(internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height)
+
+                    //from the cv format get the corresponding gl internal_format, format and type
+                    GLint internal_format=EGL_INVALID;
+                    GLenum format=EGL_INVALID;
+                    GLenum type=EGL_INVALID;
+                    tensor_type2gl_formats(internal_format, format, type, c, tensor.scalar_type(),  flip_red_blue, store_as_normalized_vals);
+
+                    CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+                    CHECK(is_format_valid(format)) << named("Format not valid");
+                    CHECK(is_type_valid(type)) << named("Type not valid");
+
+                    //allocate storage for the texture and let it uninitialized
+                    allocate_storage(internal_format, format, type, w, h);
+
+                    //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
+                    // if( (m_format==GL_RGB || m_format==GL_BGR || m_format==GL_RED) && m_width%4!=0){
+                    //     glPixelStorei(GL_PACK_ALIGNMENT, 1);
+                    // }
+
+                    //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
+                    bind();
+                    struct cudaGraphicsResource *cuda_resource;
+                    cudaGraphicsGLRegisterImage(&cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard); //write discard flag is because we will write to the texture and discard the contents
+                    cudaGraphicsMapResources(1, &cuda_resource, 0);
+
+                    //get cuda ptr
+                    // void *tex_data_ptr;
+                    // size_t nr_bytes_texture=num_bytes_texture();
+                    // cudaGraphicsResourceGetMappedPointer((void **)&tex_data_ptr, &nr_bytes_texture, cuda_resource);
+                    cudaArray *tex_data_ptr;
+                    cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, cuda_resource, 0, 0);
+
+                    //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                    torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
+                    // cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr<tensor.scalar_type()>(),  m_width *bytes_per_element(),  m_width *bytes_per_element(), m_height  );
+                    // VLOG(1) << "bytes per elements" << bytes_per_element();
+                    // VLOG(1) << "w and h is " << w << " " << h;
+                    // VLOG(1) << "tex channels is " << channels();
+                    cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+
+
+                    //unmap
+                    cudaGraphicsUnmapResources(1, &cuda_resource, 0);
+                    cudaGraphicsUnregisterResource(cuda_resource);
+
+                     //restore the packing alignment back to 4 as per default
+                    // glPixelStorei(GL_PACK_ALIGNMENT, 4);
+
+
+                    generate_mipmap_full();
+
+
+                }
+
+            }
+        #endif
+
         void generate_mipmap(const int idx_max_lvl){
             if(idx_max_lvl!=0){
                 glActiveTexture(GL_TEXTURE0);
@@ -653,6 +736,12 @@ namespace gl{
                 case GL_FLOAT : return 4; break;
                 default : LOG(FATAL) << "We don't know this type."; return 0; break;
             }
+        }
+
+        int num_bytes_texture(){
+            CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+            CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot download to an opencv mat");
+            return m_width*m_height*channels()*bytes_per_element();
         }
 
         //returns the index of the highest mip map lvl (this is used to plug into generate_mip_map)
