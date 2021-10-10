@@ -316,7 +316,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 }
 
-#ifdef EASYPBR_WITH_TORCH
+// #ifdef EASYPBR_WITH_TORCH
 
     //given an internal format of the texture, return the appropriate channels and scalar type for the tensor
     inline void gl_internal_format2tensor_type(int& nr_channels_tensor, torch::ScalarType& scalar_type_tensor, const GLint internal_format){
@@ -434,7 +434,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 
     }
-#endif
+// #endif
 
 
 

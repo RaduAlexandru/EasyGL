@@ -1,11 +1,12 @@
 #pragma once
 #include <glad/glad.h>
 
-#ifdef EASYPBR_WITH_TORCH
+// DO NOT USE A IFDEF because other C++ libs may include this Viewer.h without the compile definitions and therefore the Viewer.h that was used to compile easypbr and the one included will be different leading to issues
+// #ifdef EASYPBR_WITH_TORCH
     #include "torch/torch.h"
     #include <cuda_gl_interop.h>
     #include "c10/core/ScalarType.h" //for the function elementSize which return the number of bytes for a certain scalartype of torch
-#endif
+// #endif
 
 
 #include <iostream>
@@ -24,6 +25,7 @@ namespace gl{
             m_buf_id(EGL_INVALID),
             m_buf_storage_initialized(false),
             m_buf_is_inmutable(false),
+            m_type(EGL_INVALID),
             m_target(EGL_INVALID),
             m_usage_hints(EGL_INVALID),
             m_size_bytes(EGL_INVALID),
@@ -42,9 +44,9 @@ namespace gl{
 
         ~Buf(){
             // LOG(WARNING) << named("Destroying buffer");
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 disable_cuda_transfer();
-            #endif
+            // #endif
 
             glDeleteBuffers(1, &m_buf_id);
         }
@@ -64,6 +66,9 @@ namespace gl{
             return m_name;
         }
 
+        void set_type(GLenum type){
+            m_type=type;
+        }
 
         void set_target(const GLenum target){
             m_target=target; //can be either GL_ARRAY_BUFFER, GL_SHADER_STORAGE_BUFFER etc...
@@ -76,7 +81,7 @@ namespace gl{
         }
 
 
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
                 m_cuda_transfer_enabled=true;
                 register_for_cuda();
@@ -100,7 +105,7 @@ namespace gl{
                     cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
                 }
             }
-        #endif
+        // #endif
 
 
         void orphan(){
@@ -129,11 +134,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
@@ -149,11 +154,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
         //same as above but without specifying the target as we use the one that is already set
@@ -170,11 +175,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
 
@@ -192,11 +197,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
         void upload_sub_data(const GLenum target, const GLintptr offset, const GLsizei size_bytes, const void* data_ptr){
@@ -246,11 +251,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
         //allocate inmutable texture storage (ASSUMES TARGET WAS SET BEFORE )
@@ -265,11 +270,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
         //clear the dat assuming the buffer is composed of floats and only 1 per element
@@ -281,7 +286,7 @@ namespace gl{
         }
 
 
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             void from_tensor(torch::Tensor& tensor){
                 CHECK(m_cuda_transfer_enabled) << "You must enable first the cuda transfer with tex.enable_cuda_transfer(). This incurrs a performance cost for memory realocations so try to keep the texture in memory mostly unchanged.";
 
@@ -317,6 +322,7 @@ namespace gl{
                 //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
                 tensor=tensor.contiguous();
                 cudaMemcpy(buf_data_ptr, tensor.data_ptr(), nr_bytes_tensor, cudaMemcpyDeviceToDevice);
+                cudaDeviceSynchronize(); //we need to syncronize here because the memcopy si asyncronnous ans we dont want to start using the texture until the copy is done
 
 
                 //unmap
@@ -351,6 +357,7 @@ namespace gl{
                 //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
                 tensor=tensor.contiguous();
                 cudaMemcpy(tensor.data_ptr(), buf_data_ptr, nr_bytes_tensor, cudaMemcpyDeviceToDevice);
+                cudaDeviceSynchronize(); //we need to syncronize here because the memcopy si asyncronnous ans we dont want to start using the texture until the copy is done
 
 
                 //unmap
@@ -359,7 +366,7 @@ namespace gl{
                 return tensor;
             }
 
-        #endif
+        // #endif
 
 
         void bind() const{
@@ -370,6 +377,10 @@ namespace gl{
         void unbind() const{
             if(m_target==EGL_INVALID)  LOG(FATAL) << named("Target not set. Use upload_data or allocate_inmutable first");
             glBindBuffer( m_target, 0 );
+        }
+
+        GLenum type() const{
+            return m_type;
         }
 
         GLenum target() const {
@@ -439,6 +450,7 @@ namespace gl{
         bool m_buf_storage_initialized;
         bool m_buf_is_inmutable;
 
+        GLenum m_type;
         GLenum m_target;
         GLenum m_usage_hints;
         GLsizei m_size_bytes;
@@ -450,9 +462,9 @@ namespace gl{
 
         //if we allocate a new storage for the texture, we need to update the cuda_resource
         bool m_cuda_transfer_enabled;
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             struct cudaGraphicsResource *m_cuda_resource=nullptr;
-        #endif
+        // #endif
 
 
 

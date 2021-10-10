@@ -1,10 +1,12 @@
 #pragma once
 #include <glad/glad.h>
 
-#ifdef EASYPBR_WITH_TORCH
+
+// DO NOT USE A IFDEF because other C++ libs may include this Viewer.h without the compile definitions and therefore the Viewer.h that was used to compile easypbr and the one included will be different leading to issues
+// #ifdef EASYPBR_WITH_TORCH
     #include "torch/torch.h"
     #include <cuda_gl_interop.h>
-#endif
+// #endif
 
 #include <iostream>
 
@@ -82,9 +84,9 @@ namespace gl{
         ~Texture2D(){
             // LOG(WARNING) << named("Destroying texture");
             // cudaGraphicsUnregisterResource(m_cuda_resource);
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 disable_cuda_transfer();
-            #endif
+            // #endif
 
             glDeleteTextures(1, &m_tex_id);
 
@@ -135,7 +137,7 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
 
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
                 m_cuda_transfer_enabled=true;
                 register_for_cuda();
@@ -159,7 +161,7 @@ namespace gl{
                     cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
                 }
             }
-        #endif
+        // #endif
 
 
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
@@ -273,11 +275,11 @@ namespace gl{
             }
 
             //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
 
@@ -305,11 +307,11 @@ namespace gl{
             }
 
              //update the cuda resource since we have changed the memory of the texture
-            #ifdef EASYPBR_WITH_TORCH
+            // #ifdef EASYPBR_WITH_TORCH
                 if (m_cuda_transfer_enabled){
                     register_for_cuda();
                 }
-            #endif
+            // #endif
         }
 
 
@@ -607,7 +609,7 @@ namespace gl{
             return cv_mat;
         }
 
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             void from_tensor(const torch::Tensor& tensor, const bool flip_red_blue=false, const bool store_as_normalized_vals=true){
                 CHECK(m_cuda_transfer_enabled) << "You must enable first the cuda transfer with tex.enable_cuda_transfer(). This incurrs a performance cost for memory realocations so try to keep the texture in memory mostly unchanged.";
 
@@ -726,7 +728,7 @@ namespace gl{
 
 
             }
-        #endif
+        // #endif
 
         void generate_mipmap(const int idx_max_lvl){
             if(idx_max_lvl!=0){
@@ -880,9 +882,9 @@ namespace gl{
 
         //if we allocate a new storage for the texture, we need to update the cuda_resource
         bool m_cuda_transfer_enabled;
-        #ifdef EASYPBR_WITH_TORCH
+        // #ifdef EASYPBR_WITH_TORCH
             struct cudaGraphicsResource *m_cuda_resource=nullptr;
-        #endif
+        // #endif
 
     };
 }

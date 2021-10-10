@@ -48,13 +48,18 @@ namespace gl{
                 LOG_IF(WARNING,attribute_location==-1) << named("Attribute location for name ") << attrib_name << " is invalid. Are you sure you are using the attribute in the shader? Maybe you are also binding too many stuff.";
                 return;
             }
-            glVertexAttribPointer(attribute_location, size, GL_FLOAT, GL_FALSE, 0, 0); //TODO it assumes all buffers are made of floats!!! Maybe change that so we can query from the buffer the data type. Therefore making the buffer into a templated one
+
+            // GLenum type_buffer=buf.type();
+            // CHECK(type_buffer!=EGL_INVALID) <<"Type of buffer is not valid. Please use buf.set_type() to set a type for it";
+
+            // glVertexAttribPointer(attribute_location, size, type_buffer, GL_FALSE, 0, 0);
+            glVertexAttribPointer(attribute_location, size, GL_FLOAT, GL_FALSE, 0, 0); // TODO watch out, we assume that they are all floats but for some reason it still works fine even if we upload ints
             glEnableVertexAttribArray(attribute_location);
         }
 
         void indices(const gl::Buf& buf) const{
-            this->bind();
-            buf.bind();
+            GL_C( this->bind() );
+            GL_C( buf.bind() );
         }
 
 
