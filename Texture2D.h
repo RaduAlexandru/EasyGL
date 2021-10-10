@@ -35,7 +35,8 @@ namespace gl{
             m_cur_pbo_upload_idx(0),
             m_nr_pbos_download(3),
             m_cur_pbo_download_idx(0),
-            m_fbos_for_mips(16, EGL_INVALID){
+            m_fbos_for_mips(16, EGL_INVALID),
+            m_cuda_transfer_enabled(false){
             glGenTextures(1,&m_tex_id);
 
             //create some pbos used for uploading to the texture
@@ -62,6 +63,9 @@ namespace gl{
             //framebuffers that points towards all the mip maps. We create only the FBO pointing at mipmap 0 and the other ones will be created dinamically when calling fbo_id( mip )
             fbo_id(0);
 
+            // bind();
+            // cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+
 
             // glGenFramebuffers(1,&m_fbo_for_clearing_id);
             // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo_for_clearing_id);
@@ -77,6 +81,9 @@ namespace gl{
 
         ~Texture2D(){
             // LOG(WARNING) << named("Destroying texture");
+            // cudaGraphicsUnregisterResource(m_cuda_resource);
+            disable_cuda_transfer();
+
             glDeleteTextures(1, &m_tex_id);
 
             for(size_t i=0; i<m_fbos_for_mips.size(); i++){
@@ -85,6 +92,7 @@ namespace gl{
                     m_fbos_for_mips[i]=EGL_INVALID;
                 }
             }
+
 
         }
 
@@ -125,6 +133,31 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
 
+        void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
+            m_cuda_transfer_enabled=true;
+            register_for_cuda();
+        }
+
+        void disable_cuda_transfer(){
+            m_cuda_transfer_enabled=false;
+            if(m_cuda_resource){
+                cudaGraphicsUnregisterResource(m_cuda_resource);
+                m_cuda_resource=nullptr;
+            }
+        }
+
+        void register_for_cuda(){
+            if(m_cuda_resource){
+                cudaGraphicsUnregisterResource(m_cuda_resource);
+                m_cuda_resource=nullptr;
+            }
+            if (m_tex_storage_initialized){
+                bind();
+                VLOG(1) << "registered cuda";
+                cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+            }
+        }
+
 
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
             CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
@@ -148,10 +181,11 @@ namespace gl{
                 pbo_upload.set_width(width);
                 pbo_upload.set_height(height);
             }
-            if(!m_tex_storage_initialized || m_width!=width || m_height!=height){
-                GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
-                m_tex_storage_initialized=true;
-            }
+            // if(!m_tex_storage_initialized || m_width!=width || m_height!=height){
+                // GL_C( glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0) ); //allocate storage texture
+                // m_tex_storage_initialized=true;
+            // }
+            allocate_or_resize(internal_format, format, type, width, height);
 
             //this assignments need to be here because only here we actually create the storage and we check that m_width!=width
             m_width=width;
@@ -234,6 +268,11 @@ namespace gl{
             if(m_idx_mipmap_allocated!=0){
                 generate_mipmap(m_idx_mipmap_allocated);
             }
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
 
@@ -258,6 +297,12 @@ namespace gl{
             //if we have mip map levels we have to regenerate the memory for them too
             if(m_idx_mipmap_allocated!=0){
                 generate_mipmap(m_idx_mipmap_allocated);
+            }
+
+             //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                VLOG(1) << "allocating storage-> cuda transfer is enabled will register now for cuda";
+                register_for_cuda();
             }
         }
 
@@ -558,10 +603,12 @@ namespace gl{
 
         #ifdef EASYPBR_WITH_TORCH
             void from_tensor(const torch::Tensor& tensor, const bool flip_red_blue=false, const bool store_as_normalized_vals=true){
+                CHECK(m_cuda_transfer_enabled) << "You must enable first the cuda transfer with tex.enable_cuda_transfer(). This incurrs a performance cost for memory realocations so try to keep the texture in memory mostly unchanged.";
+
                 //check that the tensor is in format nchw
                 CHECK(tensor.dim()==4 ) << "tensor should have 4 dimensions correponding to NCHW but it has " << tensor.dim();
                 CHECK(tensor.size(0)==1 ) << "tensor first dimension should be 1. So it should be only 1 batch but it is " << tensor.size(0);
-                CHECK(tensor.size(1)==1 || tensor.size(1)==2 || tensor.size(1)==3 || tensor.size(1)==4 ) << "tensor second dimension should be 1,2,3 or 4 but it is " << tensor.size(1);
+                CHECK(tensor.size(1)==1 || tensor.size(1)==2 || tensor.size(1)==4 ) << "tensor second dimension should be 1,2,or 4 but it is " << tensor.size(1); //cuda doesnt support 3 channels as explained in the function cudaGraphicsGLRegisterImage here https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__OPENGL.html#group__CUDART__OPENGL_1g80d12187ae7590807c7676697d9fe03d
                 CHECK(tensor.scalar_type()==torch::kFloat32 || tensor.scalar_type()==torch::kUInt8 || tensor.scalar_type()==torch::kInt32 ) << "Tensor should be of type float uint8 or int32. However it is " << tensor.scalar_type();
                 CHECK(tensor.device().is_cuda() ) << "tensor should be on the GPU but it is on device " << tensor.device();
 
@@ -571,6 +618,43 @@ namespace gl{
 
                 //if the texture is already initialized, check if the types and sizes match
                 if(m_tex_storage_initialized){
+
+                    // //from the cv format get the corresponding gl internal_format, format and type
+                    // GLint internal_format=EGL_INVALID;
+                    // GLenum format=EGL_INVALID;
+                    // GLenum type=EGL_INVALID;
+                    // tensor_type2gl_formats(internal_format, format, type, c, tensor.scalar_type(),  flip_red_blue, store_as_normalized_vals);
+
+                    // CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+                    // CHECK(is_format_valid(format)) << named("Format not valid");
+                    // CHECK(is_type_valid(type)) << named("Type not valid");
+
+                    // //allocate storage for the texture and let it uninitialized
+                    // allocate_or_resize(internal_format, format, type, w, h);
+
+
+                    // //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
+                    // bind();
+                    // // struct cudaGraphicsResource *cuda_resource;
+                    // // cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+                    // // cudaGraphicsMapResources(1, &m_cuda_resource, 0);
+
+                    // //get cuda ptr
+                    // // cudaArray *tex_data_ptr;
+                    // // cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
+
+                    // //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                    // torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
+                    // // cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+
+
+                    // //unmap
+                    // // cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+                    // // cudaGraphicsUnregisterResource(m_cuda_resource);
+
+                    // generate_mipmap_full();
+
+                    // unbind();
 
                 }else{
                     //we allocate a new texture with the corresponding size
@@ -587,6 +671,7 @@ namespace gl{
                     CHECK(is_type_valid(type)) << named("Type not valid");
 
                     //allocate storage for the texture and let it uninitialized
+                    VLOG(1) << "allocating storage";
                     allocate_storage(internal_format, format, type, w, h);
 
                     //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
@@ -596,16 +681,17 @@ namespace gl{
 
                     //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
                     bind();
-                    struct cudaGraphicsResource *cuda_resource;
-                    cudaGraphicsGLRegisterImage(&cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard); //write discard flag is because we will write to the texture and discard the contents
-                    cudaGraphicsMapResources(1, &cuda_resource, 0);
+                    // struct cudaGraphicsResource *cuda_resource;
+                    // cudaGraphicsGLRegisterImage(&cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard); //write discard flag is because we will write to the texture and discard the contents
+                    // cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+                    cudaGraphicsMapResources(1, &m_cuda_resource, 0);
 
                     //get cuda ptr
                     // void *tex_data_ptr;
                     // size_t nr_bytes_texture=num_bytes_texture();
                     // cudaGraphicsResourceGetMappedPointer((void **)&tex_data_ptr, &nr_bytes_texture, cuda_resource);
                     cudaArray *tex_data_ptr;
-                    cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, cuda_resource, 0, 0);
+                    cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
 
                     //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
                     torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
@@ -617,14 +703,16 @@ namespace gl{
 
 
                     //unmap
-                    cudaGraphicsUnmapResources(1, &cuda_resource, 0);
-                    cudaGraphicsUnregisterResource(cuda_resource);
+                    cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+                    // cudaGraphicsUnregisterResource(m_cuda_resource);
 
                      //restore the packing alignment back to 4 as per default
                     // glPixelStorei(GL_PACK_ALIGNMENT, 4);
 
 
-                    generate_mipmap_full();
+                    // generate_mipmap_full(); //cannot generate mip map for some reason, probably because the memory layour changes and therefore the cuda resource also changes
+
+                    unbind();
 
 
                 }
@@ -634,7 +722,7 @@ namespace gl{
 
         void generate_mipmap(const int idx_max_lvl){
             if(idx_max_lvl!=0){
-                glActiveTexture(GL_TEXTURE0);
+                // glActiveTexture(GL_TEXTURE0);
                 bind();
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -780,6 +868,11 @@ namespace gl{
 
         std::vector<GLuint> m_fbos_for_mips; //each fbo point to a mip map of this texture
         // GLuint m_fbo_for_clearing_id; //for clearing we attach the texture to a fbo and clear that. It's a lot faster than glcleartexImage
+
+
+        //if we allocate a new storage for the texture, we need to update the cuda_resource
+        bool m_cuda_transfer_enabled;
+        struct cudaGraphicsResource *m_cuda_resource=nullptr;
 
     };
 }
