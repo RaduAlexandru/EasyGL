@@ -1,6 +1,13 @@
 #pragma once
 #include <glad/glad.h>
 
+#ifdef EASYPBR_WITH_TORCH
+    #include "torch/torch.h"
+    #include <cuda_gl_interop.h>
+    #include "c10/core/ScalarType.h" //for the function elementSize which return the number of bytes for a certain scalartype of torch
+#endif
+
+
 #include <iostream>
 #include <vector>
 #include <cstring> //memcpy
@@ -21,7 +28,8 @@ namespace gl{
             m_usage_hints(EGL_INVALID),
             m_size_bytes(EGL_INVALID),
             m_is_cpu_dirty(false),
-            m_is_gpu_dirty(false)
+            m_is_gpu_dirty(false),
+            m_cuda_transfer_enabled(false)
             {
 
             glGenBuffers(1,&m_buf_id);
@@ -34,6 +42,7 @@ namespace gl{
 
         ~Buf(){
             // LOG(WARNING) << named("Destroying buffer");
+            disable_cuda_transfer();
             glDeleteBuffers(1, &m_buf_id);
         }
 
@@ -56,6 +65,39 @@ namespace gl{
         void set_target(const GLenum target){
             m_target=target; //can be either GL_ARRAY_BUFFER, GL_SHADER_STORAGE_BUFFER etc...
         }
+        void set_target_array_buffer(){
+            m_target=GL_ARRAY_BUFFER;
+        }
+        void set_target_element_array_buffer(){
+            m_target=GL_ELEMENT_ARRAY_BUFFER;
+        }
+
+
+
+        void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
+            m_cuda_transfer_enabled=true;
+            register_for_cuda();
+        }
+
+        void disable_cuda_transfer(){
+            m_cuda_transfer_enabled=false;
+            if(m_cuda_resource){
+                cudaGraphicsUnregisterResource(m_cuda_resource);
+                m_cuda_resource=nullptr;
+            }
+        }
+
+        void register_for_cuda(){
+            if(m_cuda_resource){
+                cudaGraphicsUnregisterResource(m_cuda_resource);
+                m_cuda_resource=nullptr;
+            }
+            if (m_buf_storage_initialized){
+                bind();
+                cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
+            }
+        }
+
 
         void orphan(){
             // sanity_check();
@@ -81,6 +123,11 @@ namespace gl{
             m_size_bytes=size_bytes;
             m_usage_hints=usage_hints;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
@@ -94,6 +141,11 @@ namespace gl{
             m_size_bytes=size_bytes;
             m_usage_hints=usage_hints;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         //same as above but without specifying the target as we use the one that is already set
@@ -108,6 +160,11 @@ namespace gl{
             m_size_bytes=size_bytes;
             m_usage_hints=usage_hints;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
 
@@ -123,6 +180,11 @@ namespace gl{
 
             m_size_bytes=size_bytes;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         void upload_sub_data(const GLenum target, const GLintptr offset, const GLsizei size_bytes, const void* data_ptr){
@@ -170,6 +232,11 @@ namespace gl{
             m_size_bytes=size_bytes;
             m_buf_is_inmutable=true;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         //allocate inmutable texture storage (ASSUMES TARGET WAS SET BEFORE )
@@ -182,6 +249,11 @@ namespace gl{
             m_size_bytes=size_bytes;
             m_buf_is_inmutable=true;
             m_buf_storage_initialized=true;
+
+            //update the cuda resource since we have changed the memory of the texture
+            if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         //clear the dat assuming the buffer is composed of floats and only 1 per element
@@ -191,6 +263,87 @@ namespace gl{
             std::vector<float> clear_color(1, val);
             glClearNamedBufferSubData( m_buf_id, GL_R32F, 0, m_size_bytes, GL_RED, GL_FLOAT, clear_color.data() );
         }
+
+
+        #ifdef EASYPBR_WITH_TORCH
+            void from_tensor(torch::Tensor& tensor){
+                CHECK(m_cuda_transfer_enabled) << "You must enable first the cuda transfer with tex.enable_cuda_transfer(). This incurrs a performance cost for memory realocations so try to keep the texture in memory mostly unchanged.";
+
+                //check that the tensor has correct format
+                CHECK(tensor.scalar_type()==torch::kFloat32 || tensor.scalar_type()==torch::kUInt8 || tensor.scalar_type()==torch::kInt32 ) << "Tensor should be of type float uint8 or int32. However it is " << tensor.scalar_type();
+                CHECK(tensor.device().is_cuda() ) << "tensor should be on the GPU but it is on device " << tensor.device();
+
+                //calculate the nr of bytes of the tensor
+                size_t nr_elements_tensor=torch::numel(tensor);
+                size_t nr_bytes_tensor=nr_elements_tensor* elementSize( tensor.scalar_type() );
+
+
+                //if the buffer already has the correct size we just copy into it
+                if(m_buf_storage_initialized && nr_bytes_tensor==(size_t)m_size_bytes){
+                    //nothing to do here
+
+                }else{
+                    //we allocate a new bufffer with the corresponding size
+                    allocate_storage(nr_bytes_tensor, GL_DYNAMIC_DRAW);
+
+                }
+
+                //bind the buffer and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
+                bind();
+                cudaGraphicsMapResources(1, &m_cuda_resource, 0);
+
+                //get cuda ptr
+                void *buf_data_ptr;
+                size_t size_vieweable_by_cuda;
+                cudaGraphicsResourceGetMappedPointer(&buf_data_ptr, &size_vieweable_by_cuda, m_cuda_resource);
+                CHECK(size_vieweable_by_cuda==nr_bytes_tensor) << "nr_bytes_tensor and size_vieweable_by_cuda should be the same. But nr_bytes_tensor is " << nr_bytes_tensor << " size_vieweable_by_cuda is " << size_vieweable_by_cuda;
+
+                //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                tensor=tensor.contiguous();
+                cudaMemcpy(buf_data_ptr, tensor.data_ptr(), nr_bytes_tensor, cudaMemcpyDeviceToDevice);
+
+
+                //unmap
+                cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+
+
+                unbind();
+
+
+            }
+
+            torch::Tensor to_tensor(const torch::ScalarType scalar_type_tensor){
+                // torch::Tensor tensor = torch::zeros({ m_height, m_width, nr_channels_tensor }, torch::dtype(scalar_type_tensor).device(torch::kCUDA, 0) );
+                int nr_bytes_per_element=elementSize(scalar_type_tensor);
+                int nr_elements_buf=m_size_bytes/nr_bytes_per_element;
+                size_t nr_bytes_tensor=nr_elements_buf* elementSize( scalar_type_tensor );
+
+
+                torch::Tensor tensor = torch::zeros({ nr_elements_buf }, torch::dtype(scalar_type_tensor).device(torch::kCUDA, 0) );
+
+
+                //bind the buffer and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
+                bind();
+                cudaGraphicsMapResources(1, &m_cuda_resource, 0);
+
+                //get cuda ptr
+                void *buf_data_ptr;
+                size_t size_vieweable_by_cuda;
+                cudaGraphicsResourceGetMappedPointer(&buf_data_ptr, &size_vieweable_by_cuda, m_cuda_resource);
+                CHECK(size_vieweable_by_cuda==nr_bytes_tensor) << "nr_bytes_tensor and size_vieweable_by_cuda should be the same. But nr_bytes_tensor is " << nr_bytes_tensor << " size_vieweable_by_cuda is " << size_vieweable_by_cuda;
+
+                //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                tensor=tensor.contiguous();
+                cudaMemcpy(tensor.data_ptr(), buf_data_ptr, nr_bytes_tensor, cudaMemcpyDeviceToDevice);
+
+
+                //unmap
+                cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+
+                return tensor;
+            }
+
+        #endif
 
 
         void bind() const{
@@ -277,6 +430,11 @@ namespace gl{
         //usefult for when you run algorithms on the buffer and we need to sometimes syncronize using sync()
         bool m_is_cpu_dirty; //the data changed on the gpu buffer, we need to do a download
         bool m_is_gpu_dirty; //the data changed on the cpu , we need to do a upload
+
+
+        //if we allocate a new storage for the texture, we need to update the cuda_resource
+        bool m_cuda_transfer_enabled;
+        struct cudaGraphicsResource *m_cuda_resource=nullptr;
 
 
 
