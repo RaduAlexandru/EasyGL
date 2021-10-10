@@ -82,7 +82,9 @@ namespace gl{
         ~Texture2D(){
             // LOG(WARNING) << named("Destroying texture");
             // cudaGraphicsUnregisterResource(m_cuda_resource);
-            disable_cuda_transfer();
+            #ifdef EASYPBR_WITH_TORCH
+                disable_cuda_transfer();
+            #endif
 
             glDeleteTextures(1, &m_tex_id);
 
@@ -133,29 +135,31 @@ namespace gl{
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
         }
 
-        void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
-            m_cuda_transfer_enabled=true;
-            register_for_cuda();
-        }
+        #ifdef EASYPBR_WITH_TORCH
+            void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
+                m_cuda_transfer_enabled=true;
+                register_for_cuda();
+            }
 
-        void disable_cuda_transfer(){
-            m_cuda_transfer_enabled=false;
-            if(m_cuda_resource){
-                cudaGraphicsUnregisterResource(m_cuda_resource);
-                m_cuda_resource=nullptr;
+            void disable_cuda_transfer(){
+                m_cuda_transfer_enabled=false;
+                if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
+                }
             }
-        }
 
-        void register_for_cuda(){
-            if(m_cuda_resource){
-                cudaGraphicsUnregisterResource(m_cuda_resource);
-                m_cuda_resource=nullptr;
+            void register_for_cuda(){
+                if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
+                }
+                if (m_tex_storage_initialized){
+                    bind();
+                    cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+                }
             }
-            if (m_tex_storage_initialized){
-                bind();
-                cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
-            }
-        }
+        #endif
 
 
         void upload_data(GLint internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height,  const void* data_ptr, int size_bytes){
@@ -269,9 +273,11 @@ namespace gl{
             }
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
 
@@ -299,9 +305,11 @@ namespace gl{
             }
 
              //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
 
@@ -872,7 +880,9 @@ namespace gl{
 
         //if we allocate a new storage for the texture, we need to update the cuda_resource
         bool m_cuda_transfer_enabled;
-        struct cudaGraphicsResource *m_cuda_resource=nullptr;
+        #ifdef EASYPBR_WITH_TORCH
+            struct cudaGraphicsResource *m_cuda_resource=nullptr;
+        #endif
 
     };
 }

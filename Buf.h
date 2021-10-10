@@ -42,7 +42,10 @@ namespace gl{
 
         ~Buf(){
             // LOG(WARNING) << named("Destroying buffer");
-            disable_cuda_transfer();
+            #ifdef EASYPBR_WITH_TORCH
+                disable_cuda_transfer();
+            #endif
+
             glDeleteBuffers(1, &m_buf_id);
         }
 
@@ -73,30 +76,31 @@ namespace gl{
         }
 
 
-
-        void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
-            m_cuda_transfer_enabled=true;
-            register_for_cuda();
-        }
-
-        void disable_cuda_transfer(){
-            m_cuda_transfer_enabled=false;
-            if(m_cuda_resource){
-                cudaGraphicsUnregisterResource(m_cuda_resource);
-                m_cuda_resource=nullptr;
+        #ifdef EASYPBR_WITH_TORCH
+            void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
+                m_cuda_transfer_enabled=true;
+                register_for_cuda();
             }
-        }
 
-        void register_for_cuda(){
-            if(m_cuda_resource){
-                cudaGraphicsUnregisterResource(m_cuda_resource);
-                m_cuda_resource=nullptr;
+            void disable_cuda_transfer(){
+                m_cuda_transfer_enabled=false;
+                if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
+                }
             }
-            if (m_buf_storage_initialized){
-                bind();
-                cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
+
+            void register_for_cuda(){
+                if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
+                }
+                if (m_buf_storage_initialized){
+                    bind();
+                    cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
+                }
             }
-        }
+        #endif
 
 
         void orphan(){
@@ -125,9 +129,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
         void upload_data(const GLenum target, const GLsizei size_bytes, const void* data_ptr, const GLenum usage_hints ){
@@ -143,9 +149,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
         //same as above but without specifying the target as we use the one that is already set
@@ -162,9 +170,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
 
@@ -182,9 +192,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
         void upload_sub_data(const GLenum target, const GLintptr offset, const GLsizei size_bytes, const void* data_ptr){
@@ -234,9 +246,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
         //allocate inmutable texture storage (ASSUMES TARGET WAS SET BEFORE )
@@ -251,9 +265,11 @@ namespace gl{
             m_buf_storage_initialized=true;
 
             //update the cuda resource since we have changed the memory of the texture
-            if (m_cuda_transfer_enabled){
-                register_for_cuda();
-            }
+            #ifdef EASYPBR_WITH_TORCH
+                if (m_cuda_transfer_enabled){
+                    register_for_cuda();
+                }
+            #endif
         }
 
         //clear the dat assuming the buffer is composed of floats and only 1 per element
@@ -434,7 +450,9 @@ namespace gl{
 
         //if we allocate a new storage for the texture, we need to update the cuda_resource
         bool m_cuda_transfer_enabled;
-        struct cudaGraphicsResource *m_cuda_resource=nullptr;
+        #ifdef EASYPBR_WITH_TORCH
+            struct cudaGraphicsResource *m_cuda_resource=nullptr;
+        #endif
 
 
 
