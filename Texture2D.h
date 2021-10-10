@@ -153,7 +153,6 @@ namespace gl{
             }
             if (m_tex_storage_initialized){
                 bind();
-                VLOG(1) << "registered cuda";
                 cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
             }
         }
@@ -301,7 +300,6 @@ namespace gl{
 
              //update the cuda resource since we have changed the memory of the texture
             if (m_cuda_transfer_enabled){
-                VLOG(1) << "allocating storage-> cuda transfer is enabled will register now for cuda";
                 register_for_cuda();
             }
         }
@@ -619,46 +617,54 @@ namespace gl{
                 //if the texture is already initialized, check if the types and sizes match
                 if(m_tex_storage_initialized){
 
-                    // //from the cv format get the corresponding gl internal_format, format and type
-                    // GLint internal_format=EGL_INVALID;
-                    // GLenum format=EGL_INVALID;
-                    // GLenum type=EGL_INVALID;
-                    // tensor_type2gl_formats(internal_format, format, type, c, tensor.scalar_type(),  flip_red_blue, store_as_normalized_vals);
+                    GLint internal_format=EGL_INVALID;
+                    GLenum format=EGL_INVALID;
+                    GLenum type=EGL_INVALID;
+                    tensor_type2gl_formats(internal_format, format, type, c, tensor.scalar_type(),  flip_red_blue, store_as_normalized_vals);
 
-                    // CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
-                    // CHECK(is_format_valid(format)) << named("Format not valid");
-                    // CHECK(is_type_valid(type)) << named("Type not valid");
-
-                    // //allocate storage for the texture and let it uninitialized
-                    // allocate_or_resize(internal_format, format, type, w, h);
-
-
-                    // //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
-                    // bind();
-                    // // struct cudaGraphicsResource *cuda_resource;
-                    // // cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
-                    // // cudaGraphicsMapResources(1, &m_cuda_resource, 0);
-
-                    // //get cuda ptr
-                    // // cudaArray *tex_data_ptr;
-                    // // cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
-
-                    // //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
-                    // torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
-                    // // cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+                    CHECK(is_internal_format_valid(internal_format)) << named("Internal format not valid");
+                    CHECK(is_format_valid(format)) << named("Format not valid");
+                    CHECK(is_type_valid(type)) << named("Type not valid");
+                    if (m_internal_format!=EGL_INVALID){ //if we already have a format, it should be compatible with the one we are using for uploding
+                        CHECK(m_internal_format==internal_format) << "Previously defined internal format is not the same as the one which will be used for the tensor upload";
+                    }
+                    if (m_format!=EGL_INVALID){ //if we already have a format, it should be compatible with the one we are using for uploding
+                        CHECK(m_format==format) << "Previously defined format is not the same as the one which will be used for the tensor upload";
+                    }
+                    if (m_type!=EGL_INVALID){ //if we already have a format, it should be compatible with the one we are using for uploding
+                        CHECK(m_type==type) << "Previously defined type is not the same as the one which will be used for the tensor upload";
+                    }
 
 
-                    // //unmap
-                    // // cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
-                    // // cudaGraphicsUnregisterResource(m_cuda_resource);
 
-                    // generate_mipmap_full();
+                    //allocate storage for the texture and let it uninitialized
+                    allocate_or_resize(internal_format, format, type, w, h);
 
-                    // unbind();
+
+                    //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
+                    bind();
+                    cudaGraphicsMapResources(1, &m_cuda_resource, 0);
+
+                    //get cuda ptr
+                    cudaArray *tex_data_ptr;
+                    cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
+
+                    //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                    torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
+                    cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+
+
+                    //unmap
+                    cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+
+                    // generate_mipmap_full(); //cannot generate mip map for some reason, probably because the memory layour changes and therefore the cuda resource also changes
+
+                    unbind();
+
+
 
                 }else{
                     //we allocate a new texture with the corresponding size
-                    // allocate_storage(internal_format, GLenum format, GLenum type, GLsizei width, GLsizei height)
 
                     //from the cv format get the corresponding gl internal_format, format and type
                     GLint internal_format=EGL_INVALID;
@@ -671,44 +677,24 @@ namespace gl{
                     CHECK(is_type_valid(type)) << named("Type not valid");
 
                     //allocate storage for the texture and let it uninitialized
-                    VLOG(1) << "allocating storage";
                     allocate_storage(internal_format, format, type, w, h);
 
-                    //if the width is not divisible by 4 we need to change the packing alignment https://www.khronos.org/opengl/wiki/Common_Mistakes#Texture_upload_and_pixel_reads
-                    // if( (m_format==GL_RGB || m_format==GL_BGR || m_format==GL_RED) && m_width%4!=0){
-                    //     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-                    // }
 
                     //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
                     bind();
-                    // struct cudaGraphicsResource *cuda_resource;
-                    // cudaGraphicsGLRegisterImage(&cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard); //write discard flag is because we will write to the texture and discard the contents
-                    // cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
                     cudaGraphicsMapResources(1, &m_cuda_resource, 0);
 
                     //get cuda ptr
-                    // void *tex_data_ptr;
-                    // size_t nr_bytes_texture=num_bytes_texture();
-                    // cudaGraphicsResourceGetMappedPointer((void **)&tex_data_ptr, &nr_bytes_texture, cuda_resource);
                     cudaArray *tex_data_ptr;
                     cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
 
                     //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
                     torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
-                    // cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr<tensor.scalar_type()>(),  m_width *bytes_per_element(),  m_width *bytes_per_element(), m_height  );
-                    // VLOG(1) << "bytes per elements" << bytes_per_element();
-                    // VLOG(1) << "w and h is " << w << " " << h;
-                    // VLOG(1) << "tex channels is " << channels();
                     cudaMemcpy2DToArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
 
 
                     //unmap
                     cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
-                    // cudaGraphicsUnregisterResource(m_cuda_resource);
-
-                     //restore the packing alignment back to 4 as per default
-                    // glPixelStorei(GL_PACK_ALIGNMENT, 4);
-
 
                     // generate_mipmap_full(); //cannot generate mip map for some reason, probably because the memory layour changes and therefore the cuda resource also changes
 
@@ -716,6 +702,49 @@ namespace gl{
 
 
                 }
+
+            }
+
+
+            torch::Tensor to_tensor(){
+                CHECK(m_cuda_transfer_enabled) << "You must enable first the cuda transfer with tex.enable_cuda_transfer(). This incurrs a performance cost for memory realocations so try to keep the texture in memory mostly unchanged.";
+                CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot copy to tensor");
+                CHECK(m_internal_format!=EGL_INVALID) << named("Internal format was not initialized");
+                CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+                CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+
+                int nr_channels_tensor;
+                torch::ScalarType scalar_type_tensor;
+                gl_internal_format2tensor_type(nr_channels_tensor, scalar_type_tensor, m_internal_format);
+
+                torch::Tensor tensor = torch::zeros({ m_height, m_width, nr_channels_tensor }, torch::dtype(scalar_type_tensor).device(torch::kCUDA, 0) );
+
+                int c=tensor.size(2);
+                int h=tensor.size(0);
+                int w=tensor.size(1);
+
+                bind();
+                cudaGraphicsMapResources(1, &m_cuda_resource, 0);
+
+                //get cuda ptr
+                cudaArray *tex_data_ptr;
+                cudaGraphicsSubResourceGetMappedArray(&tex_data_ptr, m_cuda_resource, 0, 0);
+
+                //copy from tensor to tex_data_ptr http://leadsense.ilooktech.com/sdk/docs/page_samplewithopengl.html
+                // torch::Tensor tensor_hwc=tensor.permute({0,2,3,1}).squeeze().contiguous();
+                // cudaMemcpy2DFromArray(tex_data_ptr,0,0, tensor_hwc.data_ptr(),  c*w *bytes_per_element(),  c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+                cudaMemcpy2DFromArray(tensor.data_ptr(),   c*w *bytes_per_element(), tex_data_ptr, 0,0, c*w *bytes_per_element(), h, cudaMemcpyDeviceToDevice );
+
+                //unmap
+                cudaGraphicsUnmapResources(1, &m_cuda_resource, 0);
+
+                unbind();
+
+                //from h,w,c to nchw
+                tensor=tensor.unsqueeze(0).permute({0,3,1,2});
+
+                return tensor;
+
 
             }
         #endif

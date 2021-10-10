@@ -321,30 +321,32 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
     //given an internal format of the texture, return the appropriate channels and scalar type for the tensor
     inline void gl_internal_format2tensor_type(int& nr_channels_tensor, torch::ScalarType& scalar_type_tensor, const GLint internal_format){
 
+        //cuda doesnt support 3 channels as explained in the function cudaGraphicsGLRegisterImage here https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__OPENGL.html#group__CUDART__OPENGL_1g80d12187ae7590807c7676697d9fe03d
+
         switch ( internal_format ) {
             //the ones with uchar (They don't work for some reason... I think it has to be Just G_RGB and not GL_RGB8UI)
         case GL_R8UI: nr_channels_tensor=1; scalar_type_tensor=torch::kUInt8;  break;
         case GL_RG8UI: nr_channels_tensor=2; scalar_type_tensor=torch::kUInt8;  break;
-        case GL_RGB8UI: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
+        // case GL_RGB8UI: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
         case GL_RGBA8UI: nr_channels_tensor=4; scalar_type_tensor=torch::kUInt8;  break;
 
         case GL_R8: nr_channels_tensor=1; scalar_type_tensor=torch::kUInt8;  break;
         case GL_RG8: nr_channels_tensor=2; scalar_type_tensor=torch::kUInt8;  break;
-        case GL_RGB8: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
+        // case GL_RGB8: nr_channels_tensor=3; scalar_type_tensor=torch::kUInt8;  break;
         case GL_RGBA8: nr_channels_tensor=4; scalar_type_tensor=torch::kUInt8;  break;
 
         case GL_R32I: nr_channels_tensor=1; scalar_type_tensor=torch::kInt32;  break;
         case GL_RG32I: nr_channels_tensor=2; scalar_type_tensor=torch::kInt32;  break;
-        case GL_RGB32I: nr_channels_tensor=3; scalar_type_tensor=torch::kInt32;  break;
+        // case GL_RGB32I: nr_channels_tensor=3; scalar_type_tensor=torch::kInt32;  break;
         case GL_RGBA32I: nr_channels_tensor=4; scalar_type_tensor=torch::kInt32;  break;
 
         //the ones with float
         case GL_R32F: nr_channels_tensor=1; scalar_type_tensor=torch::kFloat32;  break;
         case GL_RG32F: nr_channels_tensor=2; scalar_type_tensor=torch::kFloat32;  break;
-        case GL_RGB32F: nr_channels_tensor=3; scalar_type_tensor=torch::kFloat32;  break;
+        // case GL_RGB32F: nr_channels_tensor=3; scalar_type_tensor=torch::kFloat32;  break;
         case GL_RGBA32F: nr_channels_tensor=4; scalar_type_tensor=torch::kFloat32;  break;
         //print the internal forma tin hex because the glad.h header stores them like that so it'seasy to look up
-        default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 2, 3 and 4 channels"; break;
+        default:  LOG(FATAL) << "Internal format "<< std::hex << internal_format << std::dec <<  " unkown. We support only 8, 8UI and 32F and 1, 2, and 4 channels. Cuda doesnt support 3 channels"; break;
         }
 
     }
