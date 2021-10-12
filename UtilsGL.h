@@ -1,8 +1,8 @@
 #pragma once
 
-#ifdef EASYPBR_WITH_TORCH
+// #ifdef EASYPBR_WITH_TORCH
     #include "torch/torch.h"
-#endif
+// #endif
 
 
 //eigen
@@ -187,17 +187,17 @@ inline void CheckOpenGLError(const char* stmt, const char* fname, int line)
 	CheckOpenGLError(#stmt, __FILE__, __LINE__);	\
 } while (0)
 
-#ifdef WITH_GLM
-//https://stackoverflow.com/a/20545775
-#include <glm/gtx/string_cast.hpp>
-#include <type_traits>
-#include <utility>
-template <typename GLMType, typename = decltype(glm::to_string(std::declval<GLMType>()))>
-inline std::ostream& operator<<(std::ostream& out, const GLMType& g)
-{
-    return out << glm::to_string(g);
-}
-#endif
+// #ifdef WITH_GLM
+// //https://stackoverflow.com/a/20545775
+// #include <glm/gtx/string_cast.hpp>
+// #include <type_traits>
+// #include <utility>
+// template <typename GLMType, typename = decltype(glm::to_string(std::declval<GLMType>()))>
+// inline std::ostream& operator<<(std::ostream& out, const GLMType& g)
+// {
+//     return out << glm::to_string(g);
+// }
+// #endif
 
 inline int gl_internal_format2cv_type(const GLint internal_format){
 

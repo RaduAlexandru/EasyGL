@@ -83,8 +83,10 @@ namespace gl{
 
         // #ifdef EASYPBR_WITH_TORCH
             void enable_cuda_transfer(){ //enabling cuda transfer has a performance cost for allocating memory of the texture so we leave this as optional
-                m_cuda_transfer_enabled=true;
-                register_for_cuda();
+                if(!m_cuda_transfer_enabled){
+                    m_cuda_transfer_enabled=true;
+                    register_for_cuda();
+                }
             }
 
             void disable_cuda_transfer(){
@@ -104,6 +106,10 @@ namespace gl{
                     bind();
                     cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
                 }
+            }
+
+            bool is_cuda_transfer_enabled(){
+                return m_cuda_transfer_enabled;
             }
         // #endif
 
