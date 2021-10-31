@@ -124,6 +124,9 @@ namespace gl{
             if(m_size_bytes==EGL_INVALID) LOG(FATAL) << named("Size have not been assigned. It will get assign by using upload_data.");
 
             glBindBuffer(m_target, m_buf_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glBufferData(m_target, m_size_bytes, NULL, m_usage_hints);
         }
 
@@ -133,6 +136,9 @@ namespace gl{
             if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glBufferData(m_target, size_bytes, NULL, usage_hints);
 
             m_size_bytes=size_bytes;
@@ -152,6 +158,9 @@ namespace gl{
             if(size_bytes==0) return;
 
             glBindBuffer(target, m_buf_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glBufferData(target, size_bytes, data_ptr, usage_hints);
 
             m_target=target;
@@ -174,6 +183,9 @@ namespace gl{
             if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glBufferData(m_target, size_bytes, data_ptr, usage_hints);
 
             m_size_bytes=size_bytes;
@@ -197,6 +209,9 @@ namespace gl{
             if(size_bytes==0) return;
 
             glBindBuffer(m_target, m_buf_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glBufferData(m_target, size_bytes, data_ptr, m_usage_hints);
 
             m_size_bytes=size_bytes;

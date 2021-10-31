@@ -269,6 +269,9 @@ namespace gl{
 
 
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glTexImage2D(GL_TEXTURE_2D, 0, m_internal_format, w, h, 0, m_format, m_type, 0); //allocate storage texture
 
             //if we have mip map levels we have to regenerate the memory for them too
@@ -300,6 +303,9 @@ namespace gl{
             // bind the texture
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
 
+            if (m_cuda_transfer_enabled){
+                disable_cuda_transfer();
+            }
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
             m_tex_storage_initialized=true;
 
