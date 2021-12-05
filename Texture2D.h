@@ -147,20 +147,21 @@ namespace gl{
 
             void disable_cuda_transfer(){
                 m_cuda_transfer_enabled=false;
-                if(m_cuda_resource){
-                    cudaGraphicsUnregisterResource(m_cuda_resource);
-                    m_cuda_resource=nullptr;
-                }
+                unregister_cuda();
             }
 
             void register_for_cuda(){
-                if(m_cuda_resource){
-                    cudaGraphicsUnregisterResource(m_cuda_resource);
-                    m_cuda_resource=nullptr;
-                }
+                unregister_cuda(); 
                 if (m_tex_storage_initialized){
                     bind();
                     cudaGraphicsGLRegisterImage(&m_cuda_resource, m_tex_id, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
+                }
+            }
+
+            void unregister_cuda(){
+                if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
                 }
             }
         // #endif
@@ -270,7 +271,7 @@ namespace gl{
 
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glTexImage2D(GL_TEXTURE_2D, 0, m_internal_format, w, h, 0, m_format, m_type, 0); //allocate storage texture
 
@@ -304,7 +305,7 @@ namespace gl{
             glBindTexture(GL_TEXTURE_2D, m_tex_id);
 
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format,width,height,0,format,type,0); //allocate storage texture
             m_tex_storage_initialized=true;
@@ -670,6 +671,10 @@ namespace gl{
 
 
                 }
+
+                CHECK(m_cuda_resource!=nullptr) << "The cuda resource should be something different than null. Something went wrong";
+
+
 
                 //bind the texture and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
                 bind();

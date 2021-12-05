@@ -91,20 +91,21 @@ namespace gl{
 
             void disable_cuda_transfer(){
                 m_cuda_transfer_enabled=false;
-                if(m_cuda_resource){
-                    cudaGraphicsUnregisterResource(m_cuda_resource);
-                    m_cuda_resource=nullptr;
-                }
+                unregister_cuda(); 
             }
 
             void register_for_cuda(){
-                if(m_cuda_resource){
-                    cudaGraphicsUnregisterResource(m_cuda_resource);
-                    m_cuda_resource=nullptr;
-                }
+                unregister_cuda(); 
                 if (m_buf_storage_initialized){
                     bind();
                     cudaGraphicsGLRegisterBuffer(&m_cuda_resource, m_buf_id, cudaGraphicsRegisterFlagsNone);
+                }
+            }
+
+            void unregister_cuda(){
+                 if(m_cuda_resource){
+                    cudaGraphicsUnregisterResource(m_cuda_resource);
+                    m_cuda_resource=nullptr;
                 }
             }
 
@@ -125,9 +126,12 @@ namespace gl{
 
             glBindBuffer(m_target, m_buf_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glBufferData(m_target, m_size_bytes, NULL, m_usage_hints);
+             if (m_cuda_transfer_enabled){
+                register_for_cuda();
+            }
         }
 
         void allocate_storage(const GLsizei size_bytes, const GLenum usage_hints ){
@@ -137,7 +141,7 @@ namespace gl{
 
             glBindBuffer(m_target, m_buf_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glBufferData(m_target, size_bytes, NULL, usage_hints);
 
@@ -159,7 +163,7 @@ namespace gl{
 
             glBindBuffer(target, m_buf_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glBufferData(target, size_bytes, data_ptr, usage_hints);
 
@@ -184,7 +188,7 @@ namespace gl{
 
             glBindBuffer(m_target, m_buf_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glBufferData(m_target, size_bytes, data_ptr, usage_hints);
 
@@ -210,7 +214,7 @@ namespace gl{
 
             glBindBuffer(m_target, m_buf_id);
             if (m_cuda_transfer_enabled){
-                disable_cuda_transfer();
+                unregister_cuda();
             }
             glBufferData(m_target, size_bytes, data_ptr, m_usage_hints);
 
@@ -329,6 +333,8 @@ namespace gl{
                     allocate_storage(nr_bytes_tensor, GL_DYNAMIC_DRAW);
 
                 }
+
+                CHECK(m_cuda_resource!=nullptr) << "The cuda resource should be something different than null. Something went wrong";
 
                 //bind the buffer and map it to cuda https://developer.download.nvidia.com/GTC/PDF/GTC2012/PresentationPDF/S0267A-GTC2012-Mixing-Graphics-Compute.pdf
                 bind();
