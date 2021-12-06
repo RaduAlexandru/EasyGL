@@ -1,12 +1,13 @@
 #pragma once
 
-// #ifdef EASYPBR_WITH_TORCH
+#ifdef EASYPBR_WITH_TORCH
     #include "torch/torch.h"
-// #endif
+    #include "c10/core/ScalarType.h" //for the function elementSize which return the number of bytes for a certain scalartype of torch
+#endif
 
 
 //eigen
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 //GL
 #include <glad/glad.h>
@@ -316,7 +317,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 }
 
-// #ifdef EASYPBR_WITH_TORCH
+#ifdef EASYPBR_WITH_TORCH
 
     //given an internal format of the texture, return the appropriate channels and scalar type for the tensor
     inline void gl_internal_format2tensor_type(int& nr_channels_tensor, torch::ScalarType& scalar_type_tensor, const GLint internal_format){
@@ -434,7 +435,7 @@ inline void cv_type2gl_formats(GLint& internal_format, GLenum& format, GLenum& t
 
 
     }
-// #endif
+#endif
 
 
 
