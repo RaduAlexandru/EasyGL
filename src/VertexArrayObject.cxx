@@ -8,6 +8,14 @@
 #include "easy_gl/Shader.h"
 #include "easy_gl/Buf.h"
 
+#include "easy_gl/UtilsGL.h"
+
+
+//loguru
+#define LOGURU_REPLACE_GLOG 1
+#include <loguru.hpp>
+
+
 namespace gl{
 
 VertexArrayObject::VertexArrayObject(){

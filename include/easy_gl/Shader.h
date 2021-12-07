@@ -6,7 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 
-#include <easy_gl/UtilsGL.h>
+// #include <easy_gl/UtilsGL.h>
 #include "easy_gl/Texture2D.h"
 // #include "Texture2DArray.h"
 // #include "Texture3D.h"

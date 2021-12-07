@@ -5,7 +5,7 @@
 
 #include "opencv2/opencv.hpp"
 
-#include "easy_gl/UtilsGL.h"
+// #include "easy_gl/UtilsGL.h"
 
 //use the maximum value of an int as invalid . We don't use negative because we sometimes compare with unsigned int
 #define EGL_INVALID 2147483647
