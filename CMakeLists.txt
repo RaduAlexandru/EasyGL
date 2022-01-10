@@ -72,7 +72,9 @@ target_include_directories(easygl_cpp PUBLIC ${GLFW_INCLUDE_DIR})
 # include_directories(${Boost_INCLUDE_DIR})
 target_include_directories(easygl_cpp PUBLIC ${EIGEN3_INCLUDE_DIR})
 target_include_directories(easygl_cpp PUBLIC ${OpenCV_INCLUDE_DIRS})
-target_include_directories(easygl_cpp PUBLIC ${TORCH_INCLUDE_DIRS})
+if(${TORCH_FOUND})
+    target_include_directories(easygl_cpp PUBLIC ${TORCH_INCLUDE_DIRS})
+endif()
 
 
 
