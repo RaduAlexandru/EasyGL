@@ -37,7 +37,7 @@ inline Eigen::Matrix4f intrinsics_to_opengl_proj(const Eigen::Matrix3f& K, const
     //attempt 4 (http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl)
     Eigen::Matrix4f persp = Eigen::Matrix4f::Zero();
     persp(0,0) = fx;                      persp(0,2) = -cx;
-                        persp(1,1) = fy;  persp(1,2) = -cy;
+                        persp(1,1) = fy;  persp(1,2) = -height+cy; //we flip the cy because we assume that the opencv 
                                           persp(2,2) = (znear+zfar); persp(2,3) = znear*zfar;
                                           persp(3,2) = -1.0;
 
@@ -47,8 +47,9 @@ inline Eigen::Matrix4f intrinsics_to_opengl_proj(const Eigen::Matrix3f& K, const
      ortho(2,2) = -2.0/(zfar-znear); ortho(2,3) = -(zfar+znear)/(zfar-znear);
      ortho(3,3) =  1.0;
 
-     m = ortho*persp;
-     //need t flip the z axis for some reason
+
+    m = ortho*persp;
+    //need t flip the z axis for some reason
      m(0,2)=-m(0,2);
      m(1,2)=-m(1,2);
      m(2,2)=-m(2,2);
@@ -80,6 +81,8 @@ inline Eigen::Matrix3f opengl_proj_to_intrinsics(const Eigen::Matrix4f& P, const
 
     return K;
 }
+
+
 
 // OpenGL-error callback function
 // Used when GL_ARB_debug_output is supported
