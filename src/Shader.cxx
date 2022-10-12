@@ -265,7 +265,7 @@ void Shader::uniform_array_v2_float(const Eigen::MatrixXf mat, const std::string
         uniform_array_name=uniform_name+"["+std::to_string(i)+"]";
         GLint uniform_location=get_uniform_location(uniform_array_name);
         Eigen::Vector2f row=mat.row(i); //cannot use directly mat.row(i).data() because that seems to give us eroneous data, maybe because of column major storing
-        glUniform3fv(uniform_location, 1, row.data());
+        glUniform2fv(uniform_location, 1, row.data());
     }
 }
 
