@@ -45,6 +45,7 @@ GBuffer::~GBuffer(){
 
 void GBuffer::add_texture(const std::string name, GLint internal_format, GLenum format, GLenum type){
     LOG_IF(FATAL, (int)m_textures.size()>= m_max_color_attachments-1  ) << named( name + " could not be added. Added to many textures. This will cause the vector to be dinamically resized and therefore move and destruct some of the textures. Please increase the MAX_TEXTURES #define inside the GBuffer class");
+    CHECK(is_initialized()) <<"The gbuffer has to be initialized first by calling set_size()";
 
     m_textures.emplace_back(name);
 
@@ -65,6 +66,8 @@ void GBuffer::add_texture(const std::string name, GLint internal_format, GLenum 
 }
 
 void GBuffer::add_depth(const std::string name){
+    CHECK(is_initialized()) <<"The gbuffer has to be initialized first by calling set_size()";
+
     m_has_depth_tex=true;
     m_depth_tex.set_name(name);
     if(m_width!=0 && m_height!=0){
