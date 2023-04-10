@@ -198,6 +198,8 @@ namespace gl{
         at::Tensor to_tensor();
         // #endif
 
+        void copy_from_tex(Texture2D& other_tex, const int level=0); //following https://stackoverflow.com/a/23994979 seems that glCopyTexSubImage2D is one of the fastest ways to copy
+
         void generate_mipmap(const int idx_max_lvl);
 
         //creates the full chain of mip map, up until the smallest possible texture

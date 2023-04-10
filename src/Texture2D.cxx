@@ -743,6 +743,41 @@ cv::Mat Texture2D::download_to_cv_mat(const int lvl, const bool denormalize){
     }
 #endif
 
+void Texture2D::copy_from_tex(Texture2D& other_tex, const int level){
+    //following https://stackoverflow.com/a/23994979 seems that glCopyTexSubImage2D is one of the fastest ways to copy
+    //more example on the usage of of glCopyTexSubImage2D https://stackoverflow.com/a/55294964
+
+    //check this texture
+    CHECK(m_tex_storage_initialized) << named("Texture storage was not initialized. Cannot copy to tensor");
+    CHECK(m_internal_format!=EGL_INVALID) << named("Internal format was not initialized");
+    CHECK(m_format!=EGL_INVALID) << named("Format was not initialized");
+    CHECK(m_type!=EGL_INVALID) << named("Type was not initialized");
+    //check the other texture
+    CHECK(other_tex.m_tex_storage_initialized) << named("other_tex: Texture storage was not initialized. Cannot copy to tensor");
+    CHECK(other_tex.m_internal_format!=EGL_INVALID) << named("other_tex: Internal format was not initialized");
+    CHECK(other_tex.m_format!=EGL_INVALID) << named("other_tex: Format was not initialized");
+    CHECK(other_tex.m_type!=EGL_INVALID) << named("other_tex: Type was not initialized");
+    //check that things are equal between the two textures
+    CHECK(other_tex.width()==this->width()) << named("Width is not the same between the two textures");
+    CHECK(other_tex.height()==this->height()) << named("Height is not the same between the two textures");
+    CHECK(other_tex.m_internal_format==this->m_internal_format) << named("m_internal_format is not the same between the two textures");
+    CHECK(other_tex.m_format==this->m_format) << named("m_format is not the same between the two textures");
+    CHECK(other_tex.m_type==this->m_type) << named("m_type is not the same between the two textures");
+
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, other_tex.fbo_id(level));
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+    glActiveTexture(GL_TEXTURE0);
+    this->bind();
+
+    //copy
+    glCopyTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, 0, 0, this->width(), this->height());
+
+
+}
+
 void Texture2D::generate_mipmap(const int idx_max_lvl){
     if(idx_max_lvl!=0){
         // glActiveTexture(GL_TEXTURE0);
